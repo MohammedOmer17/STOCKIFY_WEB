@@ -1,0 +1,87 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE CARD LAYOUT FOR TABLES (Low Stock & Stock Mgr)
+════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* Hide tables on mobile */
+  .table-wrap table {
+    display: none;
+  }
+
+  /* Show mobile cards */
+  .table-cards-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .table-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.875rem 1rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    row-gap: 0.5rem;
+  }
+
+  .table-card-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .table-card-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+
+  .table-card-row strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+}

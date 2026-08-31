@@ -1,0 +1,2564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stockify – Kirana Shop Platform</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    /* ─── Reset & base ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-w: 240px;
+      --topbar-h: 60px;
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #111118;
+      --bg-card: #16161f;
+      --bg-card-hover: #1e1e2a;
+      --bg-input: #1a1a24;
+      --border: #2a2a3a;
+      --border-light: #333345;
+      --accent: #6c63ff;
+      --accent-hover: #7c74ff;
+      --accent-glow: rgba(108,99,255,0.3);
+      --accent2: #ff6584;
+      --accent3: #43d9ad;
+      --accent4: #ffb347;
+      --text-primary: #f0f0ff;
+      --text-secondary: #9090b0;
+      --text-muted: #5a5a7a;
+      --success: #43d9ad;
+      --warning: #ffb347;
+      --danger: #ff6584;
+      --danger-glow: rgba(255,101,132,0.25);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-2xl: 24px;
+    }
+
+    html { -webkit-text-size-adjust: 100%; }
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+    #root { min-height: 100vh; }
+
+    /* ─── Scrollbar ─────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+    /* ─── Animations ────────────────────────────────────── */
+    @keyframes fadeIn    { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes slideInL  { from { opacity:0; transform:translateX(-20px) } to { opacity:1; transform:translateX(0) } }
+    @keyframes spin      { to { transform:rotate(360deg) } }
+    @keyframes notif     { 0%{transform:translateX(120%);opacity:0} 15%,85%{transform:translateX(0);opacity:1} 100%{transform:translateX(120%);opacity:0} }
+    @keyframes scanLine  { 0%{top:10%} 100%{top:85%} }
+
+    .fade-in  { animation: fadeIn  0.3s ease forwards; }
+    .slide-in { animation: slideInL 0.3s ease forwards; }
+
+    /* ─── Shell ─────────────────────────────────────────── */
+    .app-shell { display: flex; min-height: 100vh; width: 100%; }
+
+    /* ─── Sidebar ───────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 200;
+      transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sidebar-logo {
+      padding: 1.4rem 1.25rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg,var(--accent),var(--accent2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 900; color: #fff; flex-shrink: 0;
+    }
+    .logo-text { font-size: 1.2rem; font-weight: 800; letter-spacing: -.5px; white-space: nowrap; }
+    .logo-text span { color: var(--accent); }
+
+    .sidebar-nav { flex: 1; padding: 1rem .75rem; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; }
+    .nav-section-label {
+      font-size: .625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--text-muted); padding: .5rem .5rem .25rem;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: .625rem .75rem; border-radius: var(--radius-sm);
+      cursor: pointer; transition: all .18s;
+      color: var(--text-secondary); font-size: .875rem; font-weight: 500;
+      border: 1px solid transparent;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      min-height: 44px; /* touch target */
+    }
+    .nav-item:hover  { background: var(--bg-card); color: var(--text-primary); }
+    .nav-item.active { background: rgba(108,99,255,.15); color: var(--accent); border-color: rgba(108,99,255,.3); }
+    .nav-item .nav-icon { font-size: 1.1rem; width: 20px; text-align: center; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto; background: var(--accent); color: #fff;
+      border-radius: 20px; font-size: .6875rem; font-weight: 700;
+      padding: 1px 7px; min-width: 20px; text-align: center; flex-shrink: 0;
+    }
+    .nav-badge.danger { background: var(--danger); }
+
+    .sidebar-footer { padding: 1rem .75rem; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .user-chip {
+      display: flex; align-items: center; gap: 10px; padding: 10px;
+      border-radius: var(--radius-sm); background: var(--bg-card);
+      cursor: pointer; transition: all .18s;
+    }
+    .user-chip:hover { background: var(--bg-card-hover); }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg,var(--accent),var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8125rem; font-weight: 700; flex-shrink: 0;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: .8125rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: .6875rem; color: var(--text-muted); }
+
+    /* ─── Main content ──────────────────────────────────── */
+    .main-content {
+      margin-left: var(--sidebar-w);
+      flex: 1; min-height: 100vh;
+      display: flex; flex-direction: column;
+      min-width: 0; /* prevent overflow */
+    }
+
+    /* ─── Topbar ────────────────────────────────────────── */
+    .topbar {
+      height: var(--topbar-h);
+      padding: 0 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+      position: sticky; top: 0; z-index: 100;
+      gap: 12px;
+    }
+    .topbar-left  { display: flex; align-items: center; gap: .875rem; min-width: 0; }
+    .topbar-title { font-size: 1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-right { display: flex; align-items: center; gap: .75rem; flex-shrink: 0; }
+
+    /* ─── Hamburger ─────────────────────────────────────── */
+    .hamburger {
+      display: none;
+      background: none; border: none;
+      color: var(--text-primary); font-size: 1.4rem;
+      cursor: pointer; padding: 6px;
+      border-radius: var(--radius-sm);
+      -webkit-tap-highlight-color: transparent;
+      min-width: 40px; min-height: 40px;
+      align-items: center; justify-content: center;
+    }
+
+    /* ─── Sidebar overlay (mobile) ──────────────────────── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.65); z-index: 199;
+      backdrop-filter: blur(2px);
+    }
+    .sidebar-overlay.active { display: block; }
+
+    /* ─── Page ──────────────────────────────────────────── */
+    .page { padding: 1.5rem; animation: fadeIn .28s ease; flex: 1; min-width: 0; }
+
+    /* ─── Cards ─────────────────────────────────────────── */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.25rem; transition: border-color .18s;
+    }
+    .card:hover { border-color: var(--border-light); }
+    .card-sm { padding: 1rem; border-radius: var(--radius-md); }
+
+    /* ─── Stats grid ────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.125rem;
+      display: flex; align-items: center; gap: 1rem; transition: all .18s;
+    }
+    .stat-card:hover { border-color: var(--border-light); transform: translateY(-1px); }
+    .stat-icon {
+      width: 44px; height: 44px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; flex-shrink: 0;
+    }
+    .stat-icon.purple { background: rgba(108,99,255,.15); }
+    .stat-icon.pink   { background: rgba(255,101,132,.15); }
+    .stat-icon.green  { background: rgba(67,217,173,.15); }
+    .stat-icon.orange { background: rgba(255,179,71,.15); }
+    .stat-value { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+    .stat-label { font-size: .75rem; color: var(--text-secondary); margin-top: 3px; }
+
+    /* ─── Buttons ───────────────────────────────────────── */
+    .btn {
+      padding: .6rem 1.125rem;
+      border-radius: var(--radius-sm);
+      font-size: .875rem; font-weight: 600;
+      cursor: pointer; border: none;
+      transition: all .18s;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      text-decoration: none; font-family: inherit;
+      white-space: nowrap;
+      min-height: 40px;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 18px var(--accent-glow); transform: translateY(-1px); }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-danger:hover  { background: #ff7a9a; }
+    .btn-success { background: var(--success); color: #0a0a0f; }
+    .btn-success:hover { background: #53e9bd; }
+    .btn-outline { background: transparent; color: var(--text-primary); border: 1px solid var(--border-light); }
+    .btn-outline:hover { background: var(--bg-card-hover); border-color: var(--accent); color: var(--accent); }
+    .btn-ghost   { background: transparent; color: var(--text-secondary); border: none; }
+    .btn-ghost:hover   { color: var(--text-primary); background: var(--bg-card); }
+    .btn-sm { padding: .375rem .875rem; font-size: .75rem; border-radius: 6px; min-height: 36px; }
+    .btn-lg { padding: .875rem 1.75rem; font-size: 1rem; border-radius: var(--radius-md); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    /* ─── Forms ─────────────────────────────────────────── */
+    .form-group { margin-bottom: 1rem; }
+    .form-label { display: block; font-size: .8125rem; font-weight: 600; color: var(--text-secondary); margin-bottom: .45rem; }
+    .form-input {
+      width: 100%;
+      padding: .7rem .875rem;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: .9375rem; font-family: inherit;
+      transition: all .18s; outline: none;
+      -webkit-appearance: none; appearance: none;
+      min-height: 44px; /* better touch target */
+    }
+    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .form-input::placeholder { color: var(--text-muted); }
+    select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239090b0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .875rem center; padding-right: 2.25rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    /* ─── Table ─────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; min-width: 500px; }
+    thead tr { background: var(--bg-input); }
+    th {
+      padding: .75rem 1rem;
+      text-align: left; font-size: .6875rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    td { padding: .875rem 1rem; border-top: 1px solid var(--border); font-size: .875rem; }
+    tr:hover td { background: var(--bg-card-hover); }
+
+    /* Card-row fallback for very small tables on mobile */
+    .table-cards-mobile { display: none; }
+
+    /* ─── Badges ────────────────────────────────────────── */
+    .badge { padding: 3px 9px; border-radius: 20px; font-size: .6875rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .badge-success { background: rgba(67,217,173,.15); color: var(--success); border: 1px solid rgba(67,217,173,.3); }
+    .badge-danger  { background: rgba(255,101,132,.15); color: var(--danger);  border: 1px solid rgba(255,101,132,.3); }
+    .badge-warning { background: rgba(255,179,71,.15);  color: var(--warning); border: 1px solid rgba(255,179,71,.3); }
+    .badge-info    { background: rgba(108,99,255,.15);  color: var(--accent);  border: 1px solid rgba(108,99,255,.3); }
+
+    /* ─── Modals ────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.72); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem;
+      animation: fadeIn .2s ease;
+      overflow-y: auto;
+    }
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      width: 100%; max-width: 480px;
+      max-height: calc(100dvh - 2rem);
+      overflow-y: auto;
+      animation: fadeIn .22s ease;
+      position: relative;
+      margin: auto;
+    }
+    .modal-lg  { max-width: 620px; }
+    .modal-xl  { max-width: 800px; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; gap: 10px; }
+    .modal-title  { font-size: 1.125rem; font-weight: 700; }
+    .modal-close  {
+      background: var(--bg-input); border: none; color: var(--text-secondary);
+      width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center; transition: all .18s; flex-shrink: 0;
+    }
+    .modal-close:hover { background: var(--danger); color: #fff; }
+
+    /* ─── Landing ───────────────────────────────────────── */
+    .landing {
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--bg-primary);
+      background-image:
+        radial-gradient(ellipse at 50% 0%, rgba(108,99,255,.12) 0%, transparent 65%),
+        radial-gradient(ellipse at 100% 100%, rgba(255,101,132,.08) 0%, transparent 50%);
+      padding: 2.5rem 1.25rem;
+    }
+    .landing-logo { display: flex; align-items: center; gap: .875rem; margin-bottom: 1rem; }
+    .landing-logo-icon {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg,var(--accent),var(--accent2));
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.625rem;
+      box-shadow: 0 0 40px var(--accent-glow); flex-shrink: 0;
+    }
+    .landing-title { font-size: clamp(2rem, 8vw, 3rem); font-weight: 900; letter-spacing: -2px; }
+    .landing-title span { color: var(--accent); }
+    .landing-sub { color: var(--text-secondary); font-size: clamp(.875rem, 2.5vw, 1.0625rem); text-align: center; margin-bottom: 2.5rem; max-width: 420px; line-height: 1.65; }
+    .landing-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; width: 100%; max-width: 500px; }
+    .landing-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: clamp(1.25rem, 4vw, 2rem) clamp(1rem, 3vw, 1.75rem);
+      cursor: pointer; transition: all .22s; text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .landing-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 20px 50px rgba(108,99,255,.15); }
+    .landing-card-icon  { font-size: clamp(2rem, 6vw, 2.5rem); margin-bottom: .875rem; }
+    .landing-card-title { font-size: clamp(.9375rem, 2.5vw, 1.125rem); font-weight: 700; margin-bottom: .375rem; }
+    .landing-card-desc  { font-size: .8125rem; color: var(--text-secondary); line-height: 1.5; }
+
+    /* ─── Auth ──────────────────────────────────────────── */
+    .auth-page {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: var(--bg-primary);
+      background-image: radial-gradient(ellipse at 30% 30%, rgba(108,99,255,.1) 0%, transparent 60%);
+      padding: 1.25rem;
+    }
+    .auth-card {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius-2xl);
+      padding: clamp(1.5rem, 5vw, 2.5rem);
+      width: 100%; max-width: 420px;
+      animation: fadeIn .4s ease;
+    }
+    .auth-logo  { display: flex; align-items: center; gap: 10px; margin-bottom: 1.75rem; }
+    .auth-title { font-size: clamp(1.25rem, 4vw, 1.625rem); font-weight: 800; margin-bottom: .375rem; }
+    .auth-sub   { font-size: .875rem; color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .divider { display: flex; align-items: center; gap: .75rem; margin: 1.25rem 0; }
+    .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    .divider span { font-size: .75rem; color: var(--text-muted); white-space: nowrap; }
+    .google-btn {
+      width: 100%; padding: .75rem;
+      background: var(--bg-input); border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: .875rem; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all .18s; font-family: inherit;
+      min-height: 44px;
+    }
+    .google-btn:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+
+    /* ─── Profile setup ─────────────────────────────────── */
+    .profile-setup {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: var(--bg-primary); padding: 1.25rem;
+    }
+    .profile-card {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius-2xl);
+      padding: clamp(1.75rem, 6vw, 2.75rem);
+      width: 100%; max-width: 440px; text-align: center;
+    }
+    .profile-icon  { font-size: clamp(2.5rem, 8vw, 3.5rem); margin-bottom: 1rem; }
+    .profile-title { font-size: clamp(1.25rem, 4vw, 1.75rem); font-weight: 800; margin-bottom: .5rem; }
+    .profile-sub   { color: var(--text-secondary); font-size: .875rem; margin-bottom: 2rem; line-height: 1.65; }
+
+    /* ─── QR ────────────────────────────────────────────── */
+    .qr-container { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1.25rem; padding: 1.25rem; }
+    .qr-frame {
+      background: #fff; padding: 1.125rem; border-radius: var(--radius-lg); display: inline-flex;
+      box-shadow: 0 0 60px var(--accent-glow); max-width: 100%;
+    }
+    .qr-svg { display: block; max-width: 100%; height: auto; }
+
+    /* ─── Scanner ───────────────────────────────────────── */
+    .scanner-page {
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 2rem 1.25rem;
+      background: var(--bg-primary);
+      background-image: radial-gradient(ellipse at 50% 0%, rgba(108,99,255,.1) 0%, transparent 60%);
+    }
+    .scanner-frame {
+      position: relative; width: min(260px, 75vw); height: min(260px, 75vw);
+      border-radius: var(--radius-xl); overflow: hidden;
+      background: var(--bg-card); border: 2px solid var(--accent); margin: 1.75rem 0;
+      box-shadow: 0 0 40px var(--accent-glow);
+    }
+    .scanner-corner { position: absolute; width: 28px; height: 28px; border-color: var(--accent); border-style: solid; border-width: 0; z-index: 2; }
+    .scanner-corner.tl { top:0; left:0;  border-top-width:4px; border-left-width:4px;  border-radius:8px 0 0 0; }
+    .scanner-corner.tr { top:0; right:0; border-top-width:4px; border-right-width:4px; border-radius:0 8px 0 0; }
+    .scanner-corner.bl { bottom:0; left:0;  border-bottom-width:4px; border-left-width:4px;  border-radius:0 0 0 8px; }
+    .scanner-corner.br { bottom:0; right:0; border-bottom-width:4px; border-right-width:4px; border-radius:0 0 8px 0; }
+    .scanner-line {
+      position: absolute; left: 8px; right: 8px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scanLine 2s ease-in-out infinite alternate; z-index: 1;
+    }
+    .scanner-inner {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center; flex-direction: column; gap: .75rem;
+      color: var(--text-muted); font-size: .8125rem;
+    }
+
+    /* ─── Products grid ─────────────────────────────────── */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+      gap: 1rem;
+    }
+    .product-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.125rem; transition: all .2s;
+      display: flex; flex-direction: column; gap: .875rem;
+    }
+    .product-card:hover { border-color: var(--border-light); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+    .product-header   { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .product-name     { font-size: 1rem; font-weight: 700; }
+    .product-category { font-size: .75rem; color: var(--text-muted); margin-top: 2px; }
+    .product-price    { font-size: 1.25rem; font-weight: 800; color: var(--accent); }
+    .product-price small { font-size: .8125rem; font-weight: 500; color: var(--text-secondary); }
+    .product-stock-bar  { width: 100%; height: 4px; background: var(--bg-input); border-radius: 2px; overflow: hidden; }
+    .product-stock-fill { height: 100%; border-radius: 2px; transition: width .5s ease; }
+
+    /* ─── Qty control ───────────────────────────────────── */
+    .qty-control { display: flex; align-items: center; gap: .5rem; background: var(--bg-input); border-radius: var(--radius-sm); padding: 3px; }
+    .qty-btn {
+      width: 34px; height: 34px; border-radius: 6px; border: none; cursor: pointer;
+      background: var(--bg-card); color: var(--text-primary); font-size: 1.125rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .qty-btn:hover { background: var(--accent); }
+    .qty-value { font-size: .9375rem; font-weight: 700; min-width: 22px; text-align: center; }
+
+    /* ─── Cart ──────────────────────────────────────────── */
+    .cart-panel {
+      position: fixed; right: 0; top: 0; bottom: 0; width: min(380px, 100vw);
+      background: var(--bg-secondary); border-left: 1px solid var(--border);
+      z-index: 300; display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1);
+      box-shadow: -20px 0 60px rgba(0,0,0,.5);
+    }
+    .cart-panel.open { transform: translateX(0); }
+    .cart-header { padding: 1.125rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .cart-title  { font-size: 1.0625rem; font-weight: 700; }
+    .cart-body   { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: .75rem; -webkit-overflow-scrolling: touch; }
+    .cart-item   { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: .875rem; }
+    .cart-item-name { font-size: .875rem; font-weight: 600; margin-bottom: .5rem; }
+    .cart-item-row  { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+    .cart-item-price { font-size: 1rem; font-weight: 700; color: var(--accent); }
+    .cart-footer { padding: 1.125rem 1.25rem; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .cart-total-row  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .cart-total-label { font-size: .875rem; color: var(--text-secondary); }
+    .cart-total-value { font-size: 1.5rem; font-weight: 800; }
+    .cart-count-badge {
+      position: absolute; top: -4px; right: -4px;
+      background: var(--accent2); color: #fff;
+      border-radius: 50%; width: 22px; height: 22px; font-size: .6875rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-primary);
+    }
+
+    /* ─── Order success ─────────────────────────────────── */
+    .order-success       { text-align: center; padding: 2rem 1.25rem; }
+    .order-success-icon  { font-size: clamp(3rem, 10vw, 4rem); margin-bottom: 1rem; }
+    .order-success-title { font-size: clamp(1.375rem, 5vw, 1.75rem); font-weight: 800; margin-bottom: .5rem; }
+    .order-success-sub   { color: var(--text-secondary); font-size: .9375rem; line-height: 1.6; margin-bottom: 1.5rem; }
+
+    /* ─── Notifications ─────────────────────────────────── */
+    .notif-container {
+      position: fixed; top: .875rem; right: .875rem; z-index: 9999;
+      display: flex; flex-direction: column; gap: .625rem;
+      max-width: calc(100vw - 1.75rem); pointer-events: none;
+    }
+    .notif {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: .875rem 1.125rem;
+      width: min(340px, calc(100vw - 1.75rem));
+      box-shadow: 0 8px 30px rgba(0,0,0,.45);
+      animation: notif 3.5s ease forwards;
+      display: flex; align-items: flex-start; gap: .75rem;
+    }
+    .notif-icon  { font-size: 1.25rem; flex-shrink: 0; margin-top: 1px; }
+    .notif-title { font-size: .875rem; font-weight: 700; }
+    .notif-body  { font-size: .8125rem; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ─── Low stock ─────────────────────────────────────── */
+    .low-stock-row td:first-child { border-left: 3px solid var(--danger); }
+
+    /* ─── Billing total ─────────────────────────────────── */
+    .billing-total {
+      background: linear-gradient(135deg, rgba(108,99,255,.1), rgba(255,101,132,.07));
+      border: 1px solid rgba(108,99,255,.3); border-radius: var(--radius-md); padding: 1.125rem;
+    }
+    .billing-row       { display: flex; justify-content: space-between; margin-bottom: .625rem; font-size: .875rem; }
+    .billing-row.total { font-size: 1.25rem; font-weight: 800; padding-top: .75rem; border-top: 1px solid var(--border); margin-top: .25rem; }
+
+    /* ─── Search ────────────────────────────────────────── */
+    .search-bar { position: relative; flex: 1; }
+    .search-icon  { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem; pointer-events: none; }
+    .search-input {
+      width: 100%;
+      padding: .5625rem .75rem .5625rem 2.25rem;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: .875rem; outline: none;
+      font-family: inherit; transition: all .18s;
+      min-height: 40px;
+    }
+    .search-input:focus { border-color: var(--accent); }
+
+    /* ─── Empty state ───────────────────────────────────── */
+    .empty-state       { text-align: center; padding: 3rem 1.25rem; color: var(--text-muted); }
+    .empty-state-icon  { font-size: 3rem; margin-bottom: .875rem; opacity: .5; }
+    .empty-state-title { font-size: 1.0625rem; font-weight: 600; margin-bottom: .375rem; color: var(--text-secondary); }
+    .empty-state-sub   { font-size: .875rem; }
+
+    /* ─── Spinner ───────────────────────────────────────── */
+    .spinner { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+
+    /* ─── Inline edit ───────────────────────────────────── */
+    .inline-edit { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .inline-input {
+      padding: .3125rem .5rem;
+      background: var(--bg-input); border: 1px solid var(--border-light);
+      border-radius: 6px; color: var(--text-primary); font-size: .8125rem;
+      font-family: inherit; outline: none; width: 90px; min-height: 36px;
+    }
+    .inline-input:focus { border-color: var(--accent); }
+
+    /* ─── Order cards ───────────────────────────────────── */
+    .order-card   { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.125rem; margin-bottom: .875rem; transition: all .18s; }
+    .order-card:hover { border-color: var(--border-light); }
+    .order-header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; margin-bottom: .875rem; flex-wrap: wrap; }
+    .order-id     { font-size: .8125rem; color: var(--text-muted); font-family: monospace; }
+    .order-items  { display: flex; flex-direction: column; gap: .375rem; }
+    .order-item-row { display: flex; justify-content: space-between; font-size: .8125rem; color: var(--text-secondary); }
+    .order-footer { display: flex; align-items: center; justify-content: space-between; margin-top: .875rem; padding-top: .875rem; border-top: 1px solid var(--border); flex-wrap: wrap; gap: .75rem; }
+
+    /* ─── Category filters ──────────────────────────────── */
+    .cat-filters { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .cat-btn {
+      padding: .375rem .875rem; border-radius: 20px; font-size: .8125rem; font-weight: 600;
+      border: 1px solid var(--border); background: transparent; color: var(--text-secondary);
+      cursor: pointer; transition: all .18s; font-family: inherit;
+      min-height: 34px; -webkit-tap-highlight-color: transparent;
+    }
+    .cat-btn:hover  { border-color: var(--accent); color: var(--accent); }
+    .cat-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* ─── Dashboard two-col ─────────────────────────────── */
+    .dash-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+
+    /* ─── Billing layout ────────────────────────────────── */
+    .billing-layout { display: grid; grid-template-columns: 1fr 320px; gap: 1.25rem; align-items: start; }
+    .billing-summary-sticky { position: sticky; top: calc(var(--topbar-h) + 1rem); }
+
+    /* ─── Stock/Billing two-col ─────────────────────────── */
+    .stock-layout { display: grid; grid-template-columns: 1fr 340px; gap: 1.25rem; align-items: start; }
+
+    /* ─── Tab bar ───────────────────────────────────────── */
+    .tab-bar { display: flex; gap: 3px; margin-bottom: 1.5rem; background: var(--bg-input); padding: 4px; border-radius: var(--radius-md); width: fit-content; max-width: 100%; overflow-x: auto; }
+    .tab-btn {
+      padding: .5rem 1rem; border-radius: 8px; border: none; cursor: pointer;
+      font-weight: 600; font-size: .8125rem; font-family: inherit; transition: all .18s;
+      white-space: nowrap; min-height: 36px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ─── Customer shop header ──────────────────────────── */
+    .shop-header {
+      background: var(--bg-secondary); border-bottom: 1px solid var(--border);
+      padding: .875rem 1.25rem;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .shop-header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1200px; margin: 0 auto; gap: .75rem; flex-wrap: wrap;
+    }
+    .shop-header-right { display: flex; align-items: center; gap: .75rem; flex-shrink: 0; }
+
+    /* ─── Cart FAB ──────────────────────────────────────── */
+    .cart-fab-btn {
+      position: relative;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--accent); border: none; cursor: pointer; font-size: 1.25rem; color: #fff;
+      box-shadow: 0 6px 24px var(--accent-glow); transition: all .18s;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .cart-fab-btn:hover { transform: scale(1.08); }
+
+    /* ═══════════════════════════════════════════════════════
+       RESPONSIVE BREAKPOINTS
+    ═══════════════════════════════════════════════════════ */
+
+    /* ── Large desktop (≥1280px) ── */
+    @media (min-width: 1280px) {
+      :root { --sidebar-w: 256px; }
+      .page { padding: 2rem; }
+      .topbar { padding: 0 2rem; }
+      .billing-layout { grid-template-columns: 1fr 360px; }
+      .stock-layout   { grid-template-columns: 1fr 380px; }
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* ── Tablet landscape / small desktop (768–1279px) ── */
+    @media (max-width: 1279px) and (min-width: 768px) {
+      .billing-layout { grid-template-columns: 1fr 300px; }
+      .stock-layout   { grid-template-columns: 1fr 300px; }
+    }
+
+    /* ── Tablet portrait & small (max 1023px) ── */
+    @media (max-width: 1023px) {
+      .dash-two-col { grid-template-columns: 1fr; }
+    }
+
+    /* ── Tablet / mobile (max 900px) ── */
+    @media (max-width: 900px) {
+      /* Sidebar becomes overlay drawer */
+      .sidebar { transform: translateX(-100%); width: min(280px, 85vw); box-shadow: 8px 0 40px rgba(0,0,0,.6); }
+      .sidebar.mobile-open { transform: translateX(0); }
+      .main-content { margin-left: 0; }
+
+      /* Hamburger visible */
+      .hamburger { display: flex; }
+
+      /* Landing single column */
+      .landing-cards { grid-template-columns: 1fr; max-width: 340px; }
+
+      /* Stats 2-col on tablet */
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+
+      /* Billing stacks */
+      .billing-layout { grid-template-columns: 1fr; }
+      .billing-summary-sticky { position: static; }
+
+      /* Stock stacks */
+      .stock-layout { grid-template-columns: 1fr; }
+
+      /* Cart full width */
+      .cart-panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+
+      /* Form rows single col */
+      .form-row { grid-template-columns: 1fr; }
+
+      /* Topbar tighter */
+      .topbar { padding: 0 1rem; }
+    }
+
+    /* ── Mobile (max 640px) ── */
+    @media (max-width: 640px) {
+      .page { padding: 1rem; }
+      .topbar { height: 56px; }
+      .landing-title { font-size: 2rem; letter-spacing: -1px; }
+      .landing-sub { font-size: .875rem; margin-bottom: 1.75rem; }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: .75rem; }
+      .stat-value { font-size: 1.25rem; }
+      .stat-card  { padding: .875rem; }
+
+      /* Tables scroll on mobile */
+      .table-wrap { border-radius: var(--radius-sm); }
+      table { min-width: 480px; }
+      th, td { padding: .625rem .75rem; font-size: .8125rem; }
+
+      /* Modals nearly fullscreen */
+      .modal { border-radius: var(--radius-lg) var(--radius-lg) 0 0; max-height: 92dvh; }
+      .modal-overlay { align-items: flex-end; padding: 0; }
+
+      /* Order footer stacks */
+      .order-footer { flex-direction: column; align-items: flex-start; }
+
+      /* Auth card */
+      .auth-card { padding: 1.5rem 1.25rem; border-radius: var(--radius-xl); }
+
+      /* Profile card */
+      .profile-card { padding: 1.75rem 1.25rem; }
+
+      /* Billing summary stat chips */
+      .billing-stat-chips { grid-template-columns: 1fr 1fr; }
+
+      /* Products min card size */
+      .products-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); }
+
+      /* Notification full width */
+      .notif-container { right: .5rem; left: .5rem; }
+      .notif { width: 100%; min-width: 0; }
+    }
+
+    /* ── Very small phones (max 375px) ── */
+    @media (max-width: 375px) {
+      .page { padding: .75rem; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .landing-cards { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .btn-lg { padding: .75rem 1.25rem; font-size: .9375rem; }
+      .tab-bar { width: 100%; }
+      .tab-btn { flex: 1; font-size: .75rem; padding: .5rem .5rem; }
+    }
+
+    /* ── Touch: remove hover transforms on touch devices ── */
+    @media (hover: none) {
+      .product-card:hover { transform: none; }
+      .stat-card:hover    { transform: none; }
+      .landing-card:hover { transform: none; }
+      .btn-primary:hover  { transform: none; }
+    }
+
+    /* ── Print ──────────────────────────────────────────── */
+    @media print {
+      .sidebar, .topbar, .hamburger, .sidebar-overlay, .notif-container { display: none !important; }
+      .main-content { margin-left: 0 !important; }
+      .modal-overlay { position: static; background: none; backdrop-filter: none; padding: 0; }
+      .modal { box-shadow: none; border: 1px solid #ccc; max-height: none; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// ============================================================
+// FIREBASE CONFIG — Replace with your own Firebase project keys
+// ============================================================
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+// ============================================================
+
+const { useState, useEffect, useContext, createContext, useRef, useCallback } = React;
+
+// ============================================================
+// DEMO DATA (used when Firebase is not configured)
+// ============================================================
+const DEMO_PRODUCTS = [
+  { id:'p1', name:'Basmati Rice', category:'Grains', price:85, stock:48, unit:'kg' },
+  { id:'p2', name:'Toor Dal', category:'Pulses', price:120, stock:30, unit:'kg' },
+  { id:'p3', name:'Mustard Oil', category:'Oils', price:175, stock:8, unit:'L' },
+  { id:'p4', name:'Amul Butter', category:'Dairy', price:56, stock:22, unit:'pcs' },
+  { id:'p5', name:'Sugar', category:'Staples', price:42, stock:60, unit:'kg' },
+  { id:'p6', name:'Wheat Flour', category:'Grains', price:38, stock:3, unit:'kg' },
+  { id:'p7', name:'Aashirvaad Atta', category:'Grains', price:62, stock:15, unit:'kg' },
+  { id:'p8', name:'Chana Dal', category:'Pulses', price:95, stock:0, unit:'kg' },
+  { id:'p9', name:'Coconut Oil', category:'Oils', price:210, stock:12, unit:'L' },
+  { id:'p10', name:'Full Cream Milk', category:'Dairy', price:28, stock:35, unit:'L' },
+  { id:'p11', name:'Red Chilli Powder', category:'Spices', price:65, stock:7, unit:'pcs' },
+  { id:'p12', name:'Turmeric Powder', category:'Spices', price:55, stock:18, unit:'pcs' },
+
+  /* NEW ITEMS */
+  { id:'p13', name:'Salt', category:'Staples', price:22, stock:80, unit:'kg' },
+  { id:'p14', name:'Tea Powder', category:'Beverages', price:145, stock:9, unit:'pcs' },
+  { id:'p15', name:'Coffee Powder', category:'Beverages', price:220, stock:5, unit:'pcs' },
+  { id:'p16', name:'Refined Oil', category:'Oils', price:155, stock:25, unit:'L' },
+  { id:'p17', name:'Paneer', category:'Dairy', price:90, stock:6, unit:'pcs' },
+  { id:'p18', name:'Eggs', category:'Dairy', price:6, stock:120, unit:'pcs' },
+  { id:'p19', name:'Soap Bar', category:'Household', price:28, stock:40, unit:'pcs' },
+  { id:'p20', name:'Detergent Powder', category:'Household', price:95, stock:14, unit:'kg' },
+];
+
+const DEMO_ORDERS = [
+  { id:'ORD001', customerId:'c1', customerName:'Ravi Kumar', items:[{productId:'p1',name:'Basmati Rice',qty:2,price:85,unit:'kg'},{productId:'p5',name:'Sugar',qty:1,price:42,unit:'kg'}], total:212, status:'pending', time: Date.now()-180000 },
+  { id:'ORD002', customerId:'c2', customerName:'Priya Sharma', items:[{productId:'p2',name:'Toor Dal',qty:3,price:120,unit:'kg'},{productId:'p10',name:'Full Cream Milk',qty:4,price:28,unit:'L'}], total:472, status:'pending', time: Date.now()-600000 },
+  { id:'ORD003', customerId:'c3', customerName:'Ankit Verma', items:[{productId:'p4',name:'Amul Butter',qty:2,price:56,unit:'pcs'}], total:112, status:'completed', time: Date.now()-3600000 },
+];
+
+const DEMO_SHOP = { name:'Krishna General Store', phone:'9876543210', ownerId:'owner1' };
+
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+const AppCtx = createContext();
+
+function AppProvider({ children }) {
+  const [view, setView] = useState('landing');           // landing | ownerAuth | customerAuth | ownerSetup | ownerDash | customerScan | customerShop | orderSuccess
+  const [ownerPage, setOwnerPage] = useState('dashboard');  // dashboard | products | orders | lowstock | billing | qrcode
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);        // owner | customer
+  const [shop, setShop] = useState(DEMO_SHOP);
+  const [products, setProducts] = useState(DEMO_PRODUCTS);
+  const [orders, setOrders] = useState(DEMO_ORDERS);
+  const [cart, setCart] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [lastOrder, setLastOrder] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [firebaseReady, setFirebaseReady] = useState(false);
+
+  const notify = useCallback((title, body, icon='🔔') => {
+    const id = Date.now();
+    setNotifications(n => [...n, { id, title, body, icon }]);
+    setTimeout(() => setNotifications(n => n.filter(x => x.id !== id)), 3600);
+  }, []);
+
+  const addToCart = (product) => {
+    setCart(prev => {
+      const ex = prev.find(x => x.id === product.id);
+      if (ex) return prev.map(x => x.id === product.id ? {...x, qty: x.qty+1} : x);
+      return [...prev, { ...product, qty:1 }];
+    });
+  };
+
+  const removeFromCart = (id) => setCart(prev => prev.filter(x => x.id !== id));
+  const updateCartQty = (id, qty) => {
+    if (qty < 1) return removeFromCart(id);
+    setCart(prev => prev.map(x => x.id === id ? {...x, qty} : x));
+  };
+
+  const placeOrder = () => {
+    if (!cart.length) return;
+    const newOrder = {
+      id: 'ORD' + Date.now().toString().slice(-6),
+      customerId: currentUser?.uid || 'guest',
+      customerName: currentUser?.name || 'Customer',
+      items: cart.map(c => ({ productId:c.id, name:c.name, qty:c.qty, price:c.price, unit:c.unit })),
+      total: cart.reduce((s,x) => s + x.price*x.qty, 0),
+      status: 'pending',
+      time: Date.now()
+    };
+    setOrders(prev => [newOrder, ...prev]);
+    setProducts(prev => prev.map(p => {
+      const ci = cart.find(c => c.id === p.id);
+      if (ci) return { ...p, stock: Math.max(0, p.stock - ci.qty) };
+      return p;
+    }));
+    setLastOrder(newOrder);
+    setCart([]);
+    setCartOpen(false);
+    setView('orderSuccess');
+    notify('Order Placed! 🛍️', `Your order #${newOrder.id} has been placed successfully.`, '✅');
+  };
+
+  const completeOrder = (orderId) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? {...o, status:'completed'} : o));
+    notify('Order Ready! 📦', `Order #${orderId} marked as completed. Customer notified.`, '✅');
+  };
+
+  const updateProduct = (id, changes) => {
+    setProducts(prev => prev.map(p => p.id === id ? {...p, ...changes} : p));
+  };
+
+  const addProduct = (product) => {
+    setProducts(prev => [{ ...product, id: 'p'+Date.now() }, ...prev]);
+  };
+
+  const cartTotal = cart.reduce((s,x) => s + x.price*x.qty, 0);
+  const cartCount = cart.reduce((s,x) => s+x.qty, 0);
+  const lowStockProducts = products.filter(p => p.stock <= 10);
+  const pendingOrders = orders.filter(o => o.status === 'pending');
+
+  return (
+    <AppCtx.Provider value={{
+      view, setView, ownerPage, setOwnerPage, currentUser, setCurrentUser,
+      userRole, setUserRole, shop, setShop, products, setProducts, orders,
+      cart, addToCart, removeFromCart, updateCartQty, placeOrder, cartTotal, cartCount,
+      cartOpen, setCartOpen, notifications, notify, completeOrder, updateProduct,
+      addProduct, lowStockProducts, pendingOrders, lastOrder, sidebarOpen, setSidebarOpen,
+      firebaseReady
+    }}>
+      {children}
+    </AppCtx.Provider>
+  );
+}
+
+// ============================================================
+// NOTIFICATION TOAST
+// ============================================================
+function NotifToasts() {
+  const { notifications } = useContext(AppCtx);
+  return (
+    <div className="notif-container">
+      {notifications.map(n => (
+        <div key={n.id} className="notif">
+          <div className="notif-icon">{n.icon}</div>
+          <div><div className="notif-title">{n.title}</div><div className="notif-body">{n.body}</div></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// LANDING PAGE
+// ============================================================
+function LandingPage() {
+  const { setView, setUserRole } = useContext(AppCtx);
+  return (
+    <div className="landing">
+      <div className="landing-logo">
+        <div className="landing-logo-icon">📦</div>
+        <div className="landing-title">Stock<span>ify</span></div>
+      </div>
+      <p className="landing-sub">Smart inventory & ordering platform for Kirana shops. Manage stock, accept QR-based orders, and bill customers seamlessly.</p>
+      <div className="landing-cards">
+        <div className="landing-card fade-in" onClick={() => { setUserRole('owner'); setView('ownerAuth'); }}>
+          <div className="landing-card-icon">🏪</div>
+          <div className="landing-card-title">Owner Login</div>
+          <div className="landing-card-desc">Manage inventory, orders, billing & QR code</div>
+        </div>
+        <div className="landing-card fade-in" style={{animationDelay:'0.1s'}} onClick={() => { setUserRole('customer'); setView('customerAuth'); }}>
+          <div className="landing-card-icon">🛍️</div>
+          <div className="landing-card-title">Customer Login</div>
+          <div className="landing-card-desc">Scan QR, browse products & place orders</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// AUTH PAGE
+// ============================================================
+function AuthPage({ role }) {
+  const { setView, setCurrentUser, shop, notify } = useContext(AppCtx);
+  const [tab, setTab] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    if (!email || !password) { setError('Please fill in all fields'); return; }
+    if (tab === 'register' && !name) { setError('Please enter your name'); return; }
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      const user = { uid: 'u'+Date.now(), email, name: name || email.split('@')[0], role };
+      setCurrentUser(user);
+      if (role === 'owner') setView('ownerSetup');
+      else setView('customerScan');
+      notify('Welcome back! 👋', `Logged in as ${user.name}`, '🔐');
+    }, 1000);
+  };
+
+  const handleGoogle = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      const user = { uid: 'g'+Date.now(), email: 'user@gmail.com', name: role === 'owner' ? 'Shop Owner' : 'Customer', role };
+      setCurrentUser(user);
+      if (role === 'owner') setView('ownerSetup');
+      else setView('customerScan');
+      notify('Google Login Successful! 🎉', `Welcome, ${user.name}`, '✅');
+    }, 800);
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <div className="logo-icon">📦</div>
+          <span style={{fontSize:20,fontWeight:800}}>Stock<span style={{color:'var(--accent)'}}>ify</span></span>
+        </div>
+        <div className="auth-title">{role === 'owner' ? '🏪 Owner' : '🛍️ Customer'} {tab === 'login' ? 'Sign In' : 'Register'}</div>
+        <div className="auth-sub">{tab === 'login' ? 'Welcome back! Sign in to continue.' : 'Create your account to get started.'}</div>
+
+        <div style={{display:'flex',gap:8,marginBottom:24}}>
+          {['login','register'].map(t => (
+            <button key={t} className={`btn ${tab===t?'btn-primary':'btn-outline'} btn-sm`} onClick={() => setTab(t)} style={{flex:1}}>
+              {t === 'login' ? 'Sign In' : 'Register'}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {tab === 'register' && (
+            <div className="form-group">
+              <label className="form-label">Full Name</label>
+              <input className="form-input" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} />
+            </div>
+          )}
+          <div className="form-group">
+            <label className="form-label">Email Address</label>
+            <input className="form-input" type="email" placeholder="you@email.com" value={email} onChange={e=>setEmail(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)} />
+          </div>
+          {error && <div style={{color:'var(--danger)',fontSize:13,marginBottom:14}}>{error}</div>}
+          <button className="btn btn-primary" type="submit" disabled={loading} style={{width:'100%',justifyContent:'center',marginBottom:4}}>
+            {loading ? <span className="spinner" style={{width:18,height:18,borderWidth:2}}></span> : (tab === 'login' ? 'Sign In →' : 'Create Account →')}
+          </button>
+        </form>
+
+        <div className="divider"><span>or continue with</span></div>
+        <button className="google-btn" onClick={handleGoogle} disabled={loading}>
+          <span>🌐</span> Continue with Google
+        </button>
+
+        <button className="btn btn-ghost" style={{width:'100%',justifyContent:'center',marginTop:16,fontSize:13}} onClick={() => setView('landing')}>
+          ← Back to Home
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// OWNER PROFILE SETUP
+// ============================================================
+function OwnerSetupPage() {
+  const { setView, setShop, currentUser, notify } = useContext(AppCtx);
+  const [shopName, setShopName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState('');
+
+  const handleDone = (e) => {
+    e.preventDefault();
+    if (!shopName.trim()) { setError('Shop name is required'); return; }
+    if (!phone.trim() || phone.length < 10) { setError('Enter a valid phone number'); return; }
+    setShop({ name: shopName, phone, ownerId: currentUser?.uid });
+    notify('Profile Complete! 🏪', `${shopName} is now set up. QR code generated!`, '✅');
+    setView('ownerDash');
+  };
+
+  return (
+    <div className="profile-setup">
+      <div className="profile-card fade-in">
+        <div className="profile-icon">🏪</div>
+        <div className="profile-title">Set Up Your Shop</div>
+        <div className="profile-sub">This is required before you can start managing inventory and accepting orders.</div>
+        <form onSubmit={handleDone} style={{textAlign:'left'}}>
+          <div className="form-group">
+            <label className="form-label">Shop Name *</label>
+            <input className="form-input" placeholder="e.g. Krishna General Store" value={shopName} onChange={e=>setShopName(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Phone Number *</label>
+            <input className="form-input" placeholder="10-digit mobile number" value={phone} onChange={e=>setPhone(e.target.value)} maxLength={10} type="tel" />
+          </div>
+          {error && <div style={{color:'var(--danger)',fontSize:13,marginBottom:14}}>{error}</div>}
+          <button className="btn btn-primary btn-lg" type="submit" style={{width:'100%',justifyContent:'center'}}>
+            Done — Generate QR Code ✨
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// QR CODE GENERATOR (pure SVG, no external lib needed)
+// ============================================================
+function generateQRMatrix(text) {
+  // Simple QR-like visual using the text hash — for production use a real QR lib
+  const size = 21;
+  const seed = text.split('').reduce((a,c) => a + c.charCodeAt(0), 0);
+  const matrix = [];
+  for (let r = 0; r < size; r++) {
+    matrix[r] = [];
+    for (let c = 0; c < size; c++) {
+      // Finder patterns (corners)
+      const inFinder = (
+        (r < 7 && c < 7) || (r < 7 && c >= size-7) || (r >= size-7 && c < 7)
+      );
+      if (inFinder) {
+        const rr = r < 7 ? r : r - (size-7);
+        const cc = c < 7 ? c : c - (size-7);
+        const isOuter = rr === 0 || rr === 6 || cc === 0 || cc === 6;
+        const isInner = rr >= 2 && rr <= 4 && cc >= 2 && cc <= 4;
+        matrix[r][c] = isOuter || isInner ? 1 : 0;
+      } else {
+        const hash = (seed * (r+1) * 31 + (c+1) * 17 + r*c) % 100;
+        matrix[r][c] = hash < 50 ? 1 : 0;
+      }
+    }
+  }
+  return matrix;
+}
+
+function QRCode({ value, size = 200 }) {
+  const matrix = generateQRMatrix(value);
+  const n = matrix.length;
+  const cell = size / n;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="qr-svg">
+      <rect width={size} height={size} fill="white" />
+      {matrix.map((row, r) => row.map((val, c) =>
+        val ? <rect key={`${r}-${c}`} x={c*cell} y={r*cell} width={cell} height={cell} fill="#111118" /> : null
+      ))}
+    </svg>
+  );
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function Sidebar() {
+  const { ownerPage, setOwnerPage, shop, currentUser, setView, lowStockProducts, pendingOrders, sidebarOpen, setSidebarOpen } = useContext(AppCtx);
+
+  const navItems = [
+    { id:'dashboard', icon:'📊', label:'Dashboard' },
+    { id:'products', icon:'📦', label:'Products' },
+    { id:'orders', icon:'📋', label:'Orders', badge: pendingOrders.length },
+    { id:'lowstock', icon:'⚠️', label:'Low Stock', badge: lowStockProducts.length, badgeType:'danger' },
+    { id:'billing', icon:'🧾', label:'Billing & Stock' },
+    { id:'qrcode', icon:'📷', label:'QR Code' },
+  ];
+
+  const go = (id) => { setOwnerPage(id); setSidebarOpen(false); };
+
+  return (
+    <>
+      <div className={`sidebar-overlay ${sidebarOpen ? 'active' : ''}`} onClick={() => setSidebarOpen(false)} />
+      <aside className={`sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-logo">
+          <div className="logo-icon">📦</div>
+          <div className="logo-text">Stock<span>ify</span></div>
+        </div>
+        <nav className="sidebar-nav">
+          <div className="nav-section-label">Management</div>
+          {navItems.map(item => (
+            <div key={item.id} className={`nav-item ${ownerPage===item.id?'active':''}`} onClick={() => go(item.id)}>
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+              {item.badge > 0 && <span className={`nav-badge ${item.badgeType||''}`}>{item.badge}</span>}
+            </div>
+          ))}
+          <div className="nav-section-label" style={{marginTop:12}}>Account</div>
+          <div className="nav-item" onClick={() => setView('landing')}>
+            <span className="nav-icon">🚪</span> Sign Out
+          </div>
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <div className="avatar">{(currentUser?.name||'O')[0].toUpperCase()}</div>
+            <div className="user-info">
+              <div className="user-name">{shop?.name || currentUser?.name}</div>
+              <div className="user-role">Owner</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+// ============================================================
+// OWNER DASHBOARD
+// ============================================================
+function DashboardPage() {
+  const { products, orders, pendingOrders, lowStockProducts, shop } = useContext(AppCtx);
+  const totalValue = products.reduce((s,p) => s+p.price*p.stock, 0);
+  const todayOrders = orders.filter(o => Date.now()-o.time < 86400000);
+
+  return (
+    <div className="page fade-in">
+      <div style={{marginBottom:28}}>
+        <div style={{fontSize:24,fontWeight:800}}>Good day! 👋</div>
+        <div style={{color:'var(--text-secondary)',marginTop:4}}>{shop?.name} — Here's your store overview</div>
+      </div>
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon purple">📦</div>
+          <div><div className="stat-value">{products.length}</div><div className="stat-label">Total Products</div></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon pink">📋</div>
+          <div><div className="stat-value">{pendingOrders.length}</div><div className="stat-label">Pending Orders</div></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon orange">⚠️</div>
+          <div><div className="stat-value">{lowStockProducts.length}</div><div className="stat-label">Low Stock Items</div></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon green">💰</div>
+          <div><div className="stat-value">₹{totalValue.toLocaleString()}</div><div className="stat-label">Inventory Value</div></div>
+        </div>
+      </div>
+
+      <div className="dash-two-col">
+        <div className="card">
+          <div style={{fontWeight:700,marginBottom:16,fontSize:16}}>📋 Recent Orders</div>
+          {orders.slice(0,4).map(o => (
+            <div key={o.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:600}}>{o.customerName}</div>
+                <div style={{fontSize:12,color:'var(--text-muted)'}}>{o.id} · {o.items.length} items</div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize:14,fontWeight:700}}>₹{o.total}</div>
+                <span className={`badge ${o.status==='completed'?'badge-success':'badge-warning'}`} style={{fontSize:11}}>{o.status}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="card">
+          <div style={{fontWeight:700,marginBottom:16,fontSize:16}}>⚠️ Low Stock Alerts</div>
+          {lowStockProducts.length === 0 ? (
+            <div style={{color:'var(--text-muted)',fontSize:14,textAlign:'center',padding:'20px 0'}}>✅ All products well stocked!</div>
+          ) : (
+            <div className="table-cards-mobile">
+              {lowStockProducts.slice(0,5).map(p => (
+                <div key={p.id} className="table-card">
+                  <div className="table-card-title">{p.name}</div>
+
+                  <div className="table-card-row">
+                    <span>Category</span>
+                    <strong>{p.category}</strong>
+                  </div>
+
+                  <div className="table-card-row">
+                    <span>Stock</span>
+                    <strong>{p.stock} {p.unit}</strong>
+                  </div>
+
+                  <div className="table-card-row">
+                    <span>Status</span>
+                    <span className={`badge ${p.stock===0?'badge-danger':'badge-warning'}`}>
+                      {p.stock===0?'Out of Stock':'Low Stock'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PRODUCTS PAGE
+// ============================================================
+function ProductsPage() {
+  const { products, updateProduct, addProduct } = useContext(AppCtx);
+  const [search, setSearch] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [editing, setEditing] = useState({});
+  const [newProd, setNewProd] = useState({ name:'', category:'', price:'', stock:'', unit:'pcs' });
+
+  const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.category.toLowerCase().includes(search.toLowerCase()));
+
+  const saveInline = (id) => {
+    const e = editing[id];
+    if (!e) return;
+    updateProduct(id, { price: parseFloat(e.price)||0, stock: parseInt(e.stock)||0 });
+    setEditing(prev => { const n={...prev}; delete n[id]; return n; });
+  };
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if (!newProd.name || !newProd.category || !newProd.price) return;
+    addProduct({ ...newProd, price: parseFloat(newProd.price), stock: parseInt(newProd.stock)||0 });
+    setNewProd({ name:'', category:'', price:'', stock:'', unit:'pcs' });
+    setShowAdd(false);
+  };
+
+  return (
+    <div className="page fade-in">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem',flexWrap:'wrap',gap:'0.75rem'}}>
+        <div style={{fontSize:'1.25rem',fontWeight:800}}>📦 Products</div>
+        <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap',flex:1,justifyContent:'flex-end'}}>
+          <div className="search-bar" style={{maxWidth:280}}>
+            <span className="search-icon">🔍</span>
+            <input className="search-input" placeholder="Search products..." value={search} onChange={e=>setSearch(e.target.value)} />
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowAdd(true)}>+ Add Product</button>
+        </div>
+      </div>
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Product</th><th>Category</th><th>Stock</th><th>Price (₹)</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {filtered.map(p => {
+              const ed = editing[p.id];
+              return (
+                <tr key={p.id}>
+                  <td style={{fontWeight:600}}>{p.name}</td>
+                  <td><span className="badge badge-info">{p.category}</span></td>
+                  <td>
+                    {ed ? (
+                      <input className="inline-input" type="number" value={ed.stock} onChange={e=>setEditing(prev=>({...prev,[p.id]:{...prev[p.id],stock:e.target.value}}))} min="0" />
+                    ) : (
+                      <span style={{color: p.stock===0?'var(--danger)': p.stock<=10?'var(--warning)':'var(--text-primary)',fontWeight:600}}>
+                        {p.stock} {p.unit}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    {ed ? (
+                      <input className="inline-input" type="number" value={ed.price} onChange={e=>setEditing(prev=>({...prev,[p.id]:{...prev[p.id],price:e.target.value}}))} min="0" step="0.5" />
+                    ) : <span style={{fontWeight:700}}>₹{p.price}</span>}
+                  </td>
+                  <td>
+                    <span className={`badge ${p.stock===0?'badge-danger':p.stock<=10?'badge-warning':'badge-success'}`}>
+                      {p.stock===0?'Out':'In Stock'}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{display:'flex',gap:6}}>
+                      {ed ? (
+                        <>
+                          <button className="btn btn-success btn-sm" onClick={() => saveInline(p.id)}>✓ Save</button>
+                          <button className="btn btn-outline btn-sm" onClick={() => setEditing(prev => { const n={...prev}; delete n[p.id]; return n; })}>Cancel</button>
+                        </>
+                      ) : (
+                        <button className="btn btn-outline btn-sm" onClick={() => setEditing(prev => ({...prev,[p.id]:{price:p.price,stock:p.stock}}))}>✏️ Edit</button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {showAdd && (
+        <div className="modal-overlay" onClick={(e)=>e.target.className.includes('modal-overlay')&&setShowAdd(false)}>
+          <div className="modal">
+            <div className="modal-header">
+              <div className="modal-title">Add New Product</div>
+              <button className="modal-close" onClick={()=>setShowAdd(false)}>✕</button>
+            </div>
+            <form onSubmit={handleAdd}>
+              <div className="form-group"><label className="form-label">Product Name *</label><input className="form-input" value={newProd.name} onChange={e=>setNewProd({...newProd,name:e.target.value})} placeholder="e.g. Sunflower Oil" /></div>
+              <div className="form-row">
+                <div className="form-group"><label className="form-label">Category *</label><input className="form-input" value={newProd.category} onChange={e=>setNewProd({...newProd,category:e.target.value})} placeholder="e.g. Oils" /></div>
+                <div className="form-group"><label className="form-label">Unit</label>
+                  <select className="form-input" value={newProd.unit} onChange={e=>setNewProd({...newProd,unit:e.target.value})}>
+                    {['pcs','kg','L','g','ml','pack'].map(u=><option key={u}>{u}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label className="form-label">Price (₹) *</label><input className="form-input" type="number" value={newProd.price} onChange={e=>setNewProd({...newProd,price:e.target.value})} placeholder="0.00" min="0" step="0.5"/></div>
+                <div className="form-group"><label className="form-label">Initial Stock</label><input className="form-input" type="number" value={newProd.stock} onChange={e=>setNewProd({...newProd,stock:e.target.value})} placeholder="0" min="0"/></div>
+              </div>
+              <button className="btn btn-primary" type="submit" style={{width:'100%',justifyContent:'center'}}>Add Product</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// ORDERS PAGE
+// ============================================================
+function OrdersPage() {
+  const { orders, completeOrder } = useContext(AppCtx);
+  const [filter, setFilter] = useState('all');
+  const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
+  const fmt = (ts) => {
+    const d = new Date(ts);
+    return d.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) + ' · ' + d.toLocaleDateString('en-IN');
+  };
+
+  return (
+    <div className="page fade-in">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24,flexWrap:'wrap',gap:12}}>
+        <div style={{fontSize:20,fontWeight:800}}>📋 Customer Orders</div>
+        <div style={{display:'flex',gap:8}}>
+          {['all','pending','completed'].map(f => (
+            <button key={f} className={`cat-btn ${filter===f?'active':''}`} onClick={() => setFilter(f)}>
+              {f.charAt(0).toUpperCase()+f.slice(1)} {f==='pending'&&orders.filter(o=>o.status==='pending').length>0?`(${orders.filter(o=>o.status==='pending').length})`:''}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="empty-state"><div className="empty-state-icon">📭</div><div className="empty-state-title">No orders found</div><div className="empty-state-sub">Orders will appear here when customers place them</div></div>
+      ) : filtered.map(order => (
+        <div key={order.id} className="order-card">
+          <div className="order-header">
+            <div>
+              <div style={{fontWeight:700,fontSize:16}}>{order.customerName}</div>
+              <div className="order-id">{order.id} · {fmt(order.time)}</div>
+            </div>
+            <span className={`badge ${order.status==='completed'?'badge-success':'badge-warning'}`}>{order.status}</span>
+          </div>
+          <div className="order-items">
+            {order.items.map((it,i) => (
+              <div key={i} className="order-item-row">
+                <span>{it.name} × {it.qty} {it.unit}</span>
+                <span>₹{it.price*it.qty}</span>
+              </div>
+            ))}
+          </div>
+          <div className="order-footer">
+            <div>
+              <div style={{fontSize:13,color:'var(--text-muted)'}}>Total · 30% advance</div>
+              <div style={{fontSize:18,fontWeight:800}}>₹{order.total} · <span style={{color:'var(--success)'}}>₹{Math.round(order.total*0.3)}</span></div>
+            </div>
+            {order.status === 'pending' && (
+              <button className="btn btn-success btn-sm" onClick={() => completeOrder(order.id)}>✓ Mark Complete</button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// LOW STOCK PAGE
+// ============================================================
+function LowStockPage() {
+  const { lowStockProducts, updateProduct, notify } = useContext(AppCtx);
+  const [restockAmts, setRestockAmts] = useState({});
+
+  const handleRestock = (p) => {
+    const amt = parseInt(restockAmts[p.id]||0);
+    if (!amt) return;
+    updateProduct(p.id, { stock: p.stock + amt });
+    setRestockAmts(prev => ({...prev, [p.id]: ''}));
+    notify('Stock Updated! 📦', `${p.name} restocked by ${amt} ${p.unit}`, '✅');
+  };
+
+  return (
+    <div className="page fade-in">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24}}>
+        <div style={{fontSize:20,fontWeight:800}}>⚠️ Low Stock</div>
+        <span className="badge badge-warning">{lowStockProducts.length} items</span>
+      </div>
+
+      {lowStockProducts.length === 0 ? (
+        <div className="empty-state"><div className="empty-state-icon">✅</div><div className="empty-state-title">All Good!</div><div className="empty-state-sub">No products below the stock threshold right now.</div></div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Category</th><th>Current Stock</th><th>Status</th><th>Restock</th></tr></thead>
+            <tbody>
+              {lowStockProducts.map(p => (
+                <tr key={p.id} className="low-stock-row">
+                  <td style={{fontWeight:700}}>{p.name}</td>
+                  <td><span className="badge badge-info">{p.category}</span></td>
+                  <td style={{color:p.stock===0?'var(--danger)':'var(--warning)',fontWeight:700}}>{p.stock} {p.unit}</td>
+                  <td><span className={`badge ${p.stock===0?'badge-danger':'badge-warning'}`}>{p.stock===0?'Out of Stock':'Low Stock'}</span></td>
+                  <td>
+                    <div className="inline-edit">
+                      <input className="inline-input" type="number" placeholder="Qty" min="1" value={restockAmts[p.id]||''} onChange={e=>setRestockAmts(prev=>({...prev,[p.id]:e.target.value}))} style={{width:70}} />
+                      <button className="btn btn-success btn-sm" onClick={() => handleRestock(p)}>+ Add</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// BILLING PAGE — UPGRADED: Walk-in Billing + Bill History + Stock Audit
+// ============================================================
+function BillingPage() {
+  const { products, updateProduct, notify, shop } = useContext(AppCtx);
+
+  // Tabs: 'new' = create new bill, 'history' = past bills, 'stock' = stock management
+  const [tab, setTab] = useState('new');
+
+  // --- NEW BILL STATE ---
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [items, setItems] = useState([]);
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [discount, setDiscount] = useState('');
+  const [discountType, setDiscountType] = useState('%'); // '%' or '₹'
+  const [paymentMode, setPaymentMode] = useState('Cash');
+  const [note, setNote] = useState('');
+  const [showBillReceipt, setShowBillReceipt] = useState(false);
+  const [lastBill, setLastBill] = useState(null);
+
+  // --- BILL HISTORY ---
+  const [billHistory, setBillHistory] = useState([
+    {
+      id:'BILL0001', customerName:'Ramesh Gupta', customerPhone:'9876500001',
+      items:[{name:'Basmati Rice',qty:3,price:85,unit:'kg'},{name:'Toor Dal',qty:2,price:120,unit:'kg'}],
+      subtotal:495, discount:0, discountType:'%', discountAmt:0, total:495,
+      paymentMode:'Cash', time: Date.now()-3600000*2, note:'Regular customer'
+    },
+    {
+      id:'BILL0002', customerName:'Sunita Devi', customerPhone:'9876500002',
+      items:[{name:'Sugar',qty:5,price:42,unit:'kg'},{name:'Mustard Oil',qty:1,price:175,unit:'L'}],
+      subtotal:385, discount:10, discountType:'%', discountAmt:39, total:346,
+      paymentMode:'UPI', time: Date.now()-3600000*5, note:''
+    },
+  ]);
+
+  // --- STOCK MANAGEMENT STATE ---
+  const [stockSearch, setStockSearch] = useState('');
+  const [stockEdits, setStockEdits] = useState({});
+  const [stockMode, setStockMode] = useState({}); // 'add' | 'set' per product
+  const [stockAuditLog] = useState([
+    { id:1, product:'Wheat Flour', change:'+20 kg', reason:'Restock from supplier', time: Date.now()-3600000*10, by:'Owner' },
+    { id:2, product:'Basmati Rice', change:'-3 kg', reason:'Walk-in sale BILL0001', time: Date.now()-3600000*2, by:'Billing' },
+    { id:3, product:'Toor Dal', change:'-2 kg', reason:'Walk-in sale BILL0001', time: Date.now()-3600000*2, by:'Billing' },
+    { id:4, product:'Sugar', change:'-5 kg', reason:'Walk-in sale BILL0002', time: Date.now()-3600000*5, by:'Billing' },
+  ]);
+
+  // Suggestions for search
+  const suggestions = search.length > 1
+    ? products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) && p.stock > 0).slice(0,8)
+    : [];
+
+  const addItem = (p) => {
+    setItems(prev => {
+      const ex = prev.find(x => x.id === p.id);
+      if (ex) return prev.map(x => x.id===p.id ? {...x, qty: x.qty+1} : x);
+      return [...prev, { ...p, qty:1, customPrice: p.price }];
+    });
+    setSearch(''); setShowDropdown(false);
+  };
+
+  const updateQty = (id, val) => {
+    const v = parseInt(val)||0;
+    if (v < 1) { setItems(prev => prev.filter(x => x.id!==id)); return; }
+    const prod = products.find(p=>p.id===id);
+    if (prod && v > prod.stock) { notify('⚠️ Stock Limit', `Only ${prod.stock} ${prod.unit} available`, '⚠️'); return; }
+    setItems(prev => prev.map(x => x.id===id ? {...x,qty:v} : x));
+  };
+
+  const updateCustomPrice = (id, val) => {
+    setItems(prev => prev.map(x => x.id===id ? {...x, customPrice: parseFloat(val)||0} : x));
+  };
+
+  const subtotal = items.reduce((s,i) => s + i.customPrice * i.qty, 0);
+  const discountAmt = discount
+    ? discountType==='%' ? Math.round(subtotal * parseFloat(discount)/100)
+    : Math.min(parseFloat(discount)||0, subtotal)
+    : 0;
+  const total = subtotal - discountAmt;
+
+  const generateBill = () => {
+    if (!items.length) { notify('Empty Bill', 'Add at least one product', '⚠️'); return; }
+    const bill = {
+      id: 'BILL' + Date.now().toString().slice(-4).padStart(4,'0'),
+      customerName: customerName || 'Walk-in Customer',
+      customerPhone,
+      items: items.map(i=>({name:i.name,qty:i.qty,price:i.customPrice,unit:i.unit,productId:i.id})),
+      subtotal, discount: parseFloat(discount)||0, discountType, discountAmt, total,
+      paymentMode, time: Date.now(), note
+    };
+    // Deduct stock
+    items.forEach(item => {
+      const p = products.find(p => p.id===item.id);
+      if (p) updateProduct(p.id, { stock: Math.max(0, p.stock - item.qty) });
+    });
+    setBillHistory(prev => [bill, ...prev]);
+    setLastBill(bill);
+    setShowBillReceipt(true);
+    notify('Bill Generated! 🧾', `₹${total} bill for ${bill.customerName} — stock updated`, '✅');
+  };
+
+  const clearBill = () => {
+    setCustomerName(''); setCustomerPhone(''); setItems([]);
+    setDiscount(''); setNote(''); setPaymentMode('Cash');
+  };
+
+  // Stock management handlers
+  const applyStockChange = (p) => {
+    const val = parseInt(stockEdits[p.id])||0;
+    if (!val) return;
+    const mode = stockMode[p.id] || 'add';
+    const newStock = mode==='add' ? p.stock+val : Math.max(0, val);
+    updateProduct(p.id, { stock: newStock });
+    setStockEdits(prev=>({...prev,[p.id]:''}));
+    notify('Stock Updated ✅', `${p.name}: ${mode==='add'?`+${val}`:`set to ${val}`} ${p.unit}`, '📦');
+  };
+
+  const filteredStock = products.filter(p =>
+    !stockSearch || p.name.toLowerCase().includes(stockSearch.toLowerCase()) || p.category.toLowerCase().includes(stockSearch.toLowerCase())
+  );
+
+  const fmt = (ts) => new Date(ts).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+
+  return (
+    <div className="page fade-in">
+      {/* Page Header */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem',flexWrap:'wrap',gap:'0.75rem'}}>
+        <div>
+          <div style={{fontSize:'clamp(1rem,3vw,1.25rem)',fontWeight:800}}>🧾 Billing & Stock Management</div>
+          <div style={{fontSize:'.8125rem',color:'var(--text-secondary)',marginTop:3}}>Walk-in billing, stock control & full audit trail</div>
+        </div>
+        {tab==='new' && items.length>0 && (
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <button className="btn btn-outline btn-sm" onClick={clearBill}>🗑 Clear</button>
+            <button className="btn btn-primary btn-sm" onClick={generateBill}>🧾 Generate Bill</button>
+          </div>
+        )}
+      </div>
+
+      {/* Tab Bar */}
+      <div className="tab-bar">
+        {[
+          {id:'new', icon:'🧾', label:'New Bill'},
+          {id:'history', icon:'📜', label:'History'},
+          {id:'stock', icon:'📦', label:'Stock Mgr'},
+        ].map(t => (
+          <button key={t.id} onClick={()=>setTab(t.id)} className="tab-btn" style={{
+            background: tab===t.id ? 'var(--accent)' : 'transparent',
+            color: tab===t.id ? '#fff' : 'var(--text-secondary)',
+            fontWeight: tab===t.id ? 700 : 500,
+          }}>
+            <span>{t.icon}</span>{t.label}
+            {t.id==='history' && billHistory.length>0 && <span style={{background:tab==='history'?'rgba(255,255,255,0.25)':'var(--accent)',color:'#fff',borderRadius:20,fontSize:'0.625rem',fontWeight:700,padding:'1px 5px',marginLeft:4}}>{billHistory.length}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* ===== TAB: NEW BILL ===== */}
+      {tab==='new' && (
+        <div className="billing-layout">
+          {/* Left: Bill builder */}
+          <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+
+            {/* Customer Info */}
+            <div className="card card-sm">
+              <div style={{fontWeight:700,marginBottom:14,fontSize:14,color:'var(--text-secondary)',textTransform:'uppercase',letterSpacing:'0.5px'}}>👤 Customer Details (Optional)</div>
+              <div className="form-row">
+                <div className="form-group" style={{marginBottom:0}}>
+                  <label className="form-label">Customer Name</label>
+                  <input className="form-input" placeholder="e.g. Ramesh Gupta" value={customerName} onChange={e=>setCustomerName(e.target.value)} />
+                </div>
+                <div className="form-group" style={{marginBottom:0}}>
+                  <label className="form-label">Phone Number</label>
+                  <input className="form-input" placeholder="10-digit mobile" value={customerPhone} onChange={e=>setCustomerPhone(e.target.value)} maxLength={10} type="tel" />
+                </div>
+              </div>
+            </div>
+
+            {/* Product Search */}
+            <div className="card card-sm">
+              <div style={{fontWeight:700,marginBottom:14,fontSize:14,color:'var(--text-secondary)',textTransform:'uppercase',letterSpacing:'0.5px'}}>🔍 Add Products to Bill</div>
+              <div style={{position:'relative'}}>
+                <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',fontSize:16,color:'var(--text-muted)'}}>🔍</span>
+                <input
+                  className="form-input" style={{paddingLeft:38}}
+                  placeholder="Search product by name..."
+                  value={search}
+                  onChange={e=>{setSearch(e.target.value);setShowDropdown(true);}}
+                  onFocus={()=>setShowDropdown(true)}
+                  onBlur={()=>setTimeout(()=>setShowDropdown(false),180)}
+                />
+                {showDropdown && suggestions.length > 0 && (
+                  <div style={{
+                    position:'absolute',top:'calc(100% + 4px)',left:0,right:0,
+                    background:'var(--bg-secondary)',border:'1px solid var(--border-light)',
+                    borderRadius:12,zIndex:50,overflow:'hidden',
+                    boxShadow:'0 10px 40px rgba(0,0,0,0.4)'
+                  }}>
+                    {suggestions.map(p => (
+                      <div key={p.id}
+                        style={{padding:'11px 16px',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid var(--border)',transition:'background 0.15s'}}
+                        onMouseDown={() => addItem(p)}
+                        onMouseOver={e=>e.currentTarget.style.background='var(--bg-card-hover)'}
+                        onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                        <div>
+                          <div style={{fontWeight:600,fontSize:14}}>{p.name}</div>
+                          <div style={{fontSize:12,color:'var(--text-muted)'}}>{p.category} · {p.stock} {p.unit} in stock</div>
+                        </div>
+                        <div style={{textAlign:'right'}}>
+                          <div style={{color:'var(--accent)',fontWeight:700}}>₹{p.price}/{p.unit}</div>
+                          <div style={{fontSize:11,color:p.stock<=10?'var(--warning)':'var(--success)'}}>{p.stock<=10?'Low stock':'Available'}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Items Table */}
+            {items.length === 0 ? (
+              <div className="card" style={{textAlign:'center',padding:'48px 20px'}}>
+                <div style={{fontSize:48,marginBottom:12,opacity:0.3}}>🛒</div>
+                <div style={{fontWeight:600,color:'var(--text-secondary)',marginBottom:4}}>Bill is empty</div>
+                <div style={{fontSize:13,color:'var(--text-muted)'}}>Search and add products above to start billing</div>
+              </div>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Product</th>
+                      <th>Unit Price (₹)</th>
+                      <th>Qty</th>
+                      <th>Stock Left</th>
+                      <th>Subtotal</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item, idx) => {
+                      const prod = products.find(p=>p.id===item.id);
+                      const remaining = prod ? prod.stock - item.qty : 0;
+                      return (
+                        <tr key={item.id}>
+                          <td style={{color:'var(--text-muted)',fontSize:13}}>{idx+1}</td>
+                          <td>
+                            <div style={{fontWeight:700}}>{item.name}</div>
+                            <div style={{fontSize:12,color:'var(--text-muted)'}}>{item.unit}</div>
+                          </td>
+                          <td>
+                            <input
+                              className="inline-input"
+                              type="number" min="0" step="0.5"
+                              value={item.customPrice}
+                              onChange={e=>updateCustomPrice(item.id,e.target.value)}
+                              title="Override price for this bill"
+                              style={{width:80}}
+                            />
+                          </td>
+                          <td>
+                            <div className="qty-control" style={{width:'fit-content'}}>
+                              <button className="qty-btn" onClick={()=>updateQty(item.id,item.qty-1)}>−</button>
+                              <span className="qty-value">{item.qty}</span>
+                              <button className="qty-btn" onClick={()=>updateQty(item.id,item.qty+1)}>+</button>
+                            </div>
+                          </td>
+                          <td>
+                            <span style={{
+                              color: remaining<0?'var(--danger)':remaining<=5?'var(--warning)':'var(--success)',
+                              fontWeight:600, fontSize:13
+                            }}>
+                              {remaining<0?'⚠️ Exceeds':remaining} {item.unit}
+                            </span>
+                          </td>
+                          <td style={{fontWeight:800,color:'var(--accent)'}}>₹{(item.customPrice*item.qty).toFixed(0)}</td>
+                          <td>
+                            <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)',padding:'4px 8px'}}
+                              onClick={()=>setItems(prev=>prev.filter(x=>x.id!==item.id))}>✕</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Note */}
+            {items.length > 0 && (
+              <div className="card card-sm">
+                <label className="form-label">📝 Note / Remark (Optional)</label>
+                <input className="form-input" placeholder="e.g. Regular customer, credit given..." value={note} onChange={e=>setNote(e.target.value)} />
+              </div>
+            )}
+          </div>
+
+          {/* Right: Bill Summary */}
+          <div className="billing-summary-sticky">
+            <div style={{background:'linear-gradient(135deg,rgba(108,99,255,0.1),rgba(255,101,132,0.07))',border:'1px solid rgba(108,99,255,0.25)',borderRadius:18,padding:22}}>
+              <div style={{fontWeight:800,fontSize:16,marginBottom:20,display:'flex',alignItems:'center',gap:8}}>
+                🧾 Bill Summary
+              </div>
+
+              {/* Item list preview */}
+              <div style={{maxHeight:220,overflowY:'auto',marginBottom:16}}>
+                {items.length===0 ? (
+                  <div style={{color:'var(--text-muted)',fontSize:13,textAlign:'center',padding:'16px 0'}}>No items yet</div>
+                ) : items.map((it,i)=>(
+                  <div key={it.id} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+                    <span style={{color:'var(--text-secondary)'}}>{it.name} ×{it.qty}</span>
+                    <span style={{fontWeight:600}}>₹{(it.customPrice*it.qty).toFixed(0)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Subtotal */}
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:14,marginBottom:12}}>
+                <span style={{color:'var(--text-secondary)'}}>Subtotal</span>
+                <span style={{fontWeight:600}}>₹{subtotal}</span>
+              </div>
+
+              {/* Discount */}
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:13,fontWeight:600,color:'var(--text-secondary)',marginBottom:8}}>Discount</div>
+                <div style={{display:'flex',gap:6}}>
+                  <input className="form-input" type="number" min="0" placeholder="0" value={discount} onChange={e=>setDiscount(e.target.value)} style={{flex:1}} />
+                  <button
+                    onClick={()=>setDiscountType(dt=>dt==='%'?'₹':'%')}
+                    style={{
+                      padding:'0 14px',borderRadius:10,border:'1px solid var(--border-light)',
+                      background:'var(--bg-input)',color:'var(--accent)',fontWeight:800,cursor:'pointer',
+                      fontSize:15,flexShrink:0,fontFamily:'inherit',minWidth:44
+                    }}>{discountType}</button>
+                </div>
+                {discountAmt > 0 && (
+                  <div style={{fontSize:12,color:'var(--success)',marginTop:6}}>✅ Saving ₹{discountAmt}</div>
+                )}
+              </div>
+
+              {/* Total */}
+              <div style={{display:'flex',justifyContent:'space-between',padding:'14px 0',borderTop:'1px solid var(--border)',borderBottom:'1px solid var(--border)',marginBottom:16}}>
+                <span style={{fontSize:18,fontWeight:800}}>Total</span>
+                <span style={{fontSize:24,fontWeight:900,color:'var(--accent)'}}>₹{total}</span>
+              </div>
+
+              {/* Payment Mode */}
+              <div style={{marginBottom:18}}>
+                <div style={{fontSize:13,fontWeight:600,color:'var(--text-secondary)',marginBottom:8}}>Payment Mode</div>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  {['Cash','UPI','Card','Credit'].map(m=>(
+                    <button key={m} onClick={()=>setPaymentMode(m)} style={{
+                      padding:'6px 14px',borderRadius:8,border:'1px solid',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'inherit',
+                      borderColor: paymentMode===m?'var(--accent)':'var(--border)',
+                      background: paymentMode===m?'rgba(108,99,255,0.2)':'transparent',
+                      color: paymentMode===m?'var(--accent)':'var(--text-secondary)',
+                      transition:'all 0.15s'
+                    }}>{m==='Cash'?'💵':m==='UPI'?'📱':m==='Card'?'💳':'📒'} {m}</button>
+                  ))}
+                </div>
+              </div>
+
+              <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',fontSize:15,padding:'13px'}} disabled={!items.length} onClick={generateBill}>
+                🧾 Generate Bill & Deduct Stock
+              </button>
+              <button className="btn btn-outline" style={{width:'100%',justifyContent:'center',marginTop:10}} onClick={clearBill}>
+                🗑 Clear Bill
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== TAB: BILL HISTORY ===== */}
+      {tab==='history' && (
+        <div className="fade-in">
+          {/* Stats row */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,150px),1fr))',gap:'0.875rem',marginBottom:'1.5rem'}}>
+            {[
+              {label:'Total Bills', value:billHistory.length, icon:'🧾', color:'var(--accent)'},
+              {label:'Total Revenue', value:'₹'+billHistory.reduce((s,b)=>s+b.total,0).toLocaleString(), icon:'💰', color:'var(--success)'},
+              {label:'Avg Bill Value', value:'₹'+Math.round(billHistory.reduce((s,b)=>s+b.total,0)/(billHistory.length||1)), icon:'📊', color:'var(--warning)'},
+              {label:'Cash Payments', value:billHistory.filter(b=>b.paymentMode==='Cash').length, icon:'💵', color:'var(--accent2)'},
+            ].map(s=>(
+              <div key={s.label} style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:14,padding:'16px 18px',display:'flex',alignItems:'center',gap:14}}>
+                <div style={{fontSize:26}}>{s.icon}</div>
+                <div>
+                  <div style={{fontSize:20,fontWeight:800,color:s.color}}>{s.value}</div>
+                  <div style={{fontSize:12,color:'var(--text-secondary)'}}>{s.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {billHistory.length===0 ? (
+            <div className="empty-state"><div className="empty-state-icon">📜</div><div className="empty-state-title">No bills yet</div><div className="empty-state-sub">Generate your first bill to see it here</div></div>
+          ) : billHistory.map(bill=>(
+            <div key={bill.id} style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:16,padding:'18px 20px',marginBottom:14,transition:'all 0.2s'}}
+              onMouseOver={e=>e.currentTarget.style.borderColor='var(--border-light)'}
+              onMouseOut={e=>e.currentTarget.style.borderColor='var(--border)'}
+            >
+              <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:10}}>
+                <div>
+                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
+                    <span style={{fontWeight:800,fontSize:16}}>{bill.customerName}</span>
+                    {bill.customerPhone && <span style={{fontSize:12,color:'var(--text-muted)'}}>📞 {bill.customerPhone}</span>}
+                  </div>
+                  <div style={{fontSize:12,color:'var(--text-muted)',display:'flex',gap:12}}>
+                    <span>🪪 {bill.id}</span>
+                    <span>🕐 {fmt(bill.time)}</span>
+                    <span>{bill.paymentMode==='Cash'?'💵':bill.paymentMode==='UPI'?'📱':bill.paymentMode==='Card'?'💳':'📒'} {bill.paymentMode}</span>
+                  </div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontSize:22,fontWeight:900,color:'var(--accent)'}}>₹{bill.total}</div>
+                  {bill.discountAmt>0 && <div style={{fontSize:12,color:'var(--success)'}}>Saved ₹{bill.discountAmt}</div>}
+                </div>
+              </div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                {bill.items.map((it,i)=>(
+                  <span key={i} style={{background:'var(--bg-input)',border:'1px solid var(--border)',borderRadius:8,padding:'4px 10px',fontSize:12,color:'var(--text-secondary)'}}>
+                    {it.name} ×{it.qty} — <span style={{color:'var(--text-primary)',fontWeight:600}}>₹{it.price*it.qty}</span>
+                  </span>
+                ))}
+              </div>
+              {bill.note && (
+                <div style={{marginTop:10,fontSize:13,color:'var(--text-muted)',fontStyle:'italic'}}>📝 {bill.note}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ===== TAB: STOCK MANAGER ===== */}
+      {tab==='stock' && (
+        <div className="fade-in">
+          <div className="stock-layout">
+            {/* Left: Product stock table */}
+            <div>
+              <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+                <div className="search-bar" style={{maxWidth:300}}>
+                  <span className="search-icon">🔍</span>
+                  <input className="search-input" placeholder="Search products..." value={stockSearch} onChange={e=>setStockSearch(e.target.value)} />
+                </div>
+                <span style={{fontSize:13,color:'var(--text-secondary)'}}>{filteredStock.length} products</span>
+              </div>
+
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Category</th>
+                      <th>Current Stock</th>
+                      <th>Status</th>
+                      <th>Mode</th>
+                      <th>Amount</th>
+                      <th>Apply</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStock.map(p => {
+                      const mode = stockMode[p.id] || 'add';
+                      return (
+                        <tr key={p.id}>
+                          <td style={{fontWeight:700}}>{p.name}</td>
+                          <td><span className="badge badge-info">{p.category}</span></td>
+                          <td>
+                            <span style={{
+                              fontWeight:700,
+                              color: p.stock===0?'var(--danger)':p.stock<=10?'var(--warning)':'var(--success)'
+                            }}>{p.stock} {p.unit}</span>
+                          </td>
+                          <td>
+                            <span className={`badge ${p.stock===0?'badge-danger':p.stock<=10?'badge-warning':'badge-success'}`}>
+                              {p.stock===0?'Out of Stock':p.stock<=10?'Low Stock':'In Stock'}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{display:'flex',background:'var(--bg-input)',borderRadius:8,padding:2,gap:2}}>
+                              {['add','set'].map(m=>(
+                                <button key={m} onClick={()=>setStockMode(prev=>({...prev,[p.id]:m}))} style={{
+                                  padding:'4px 10px',borderRadius:6,border:'none',cursor:'pointer',fontFamily:'inherit',
+                                  background:mode===m?'var(--accent)':'transparent',
+                                  color:mode===m?'#fff':'var(--text-secondary)',
+                                  fontSize:12,fontWeight:600,transition:'all 0.15s'
+                                }}>{m==='add'?'+ Add':'= Set'}</button>
+                              ))}
+                            </div>
+                          </td>
+                          <td>
+                            <input
+                              className="inline-input" type="number" min="0" placeholder={mode==='add'?'+ qty':'set qty'}
+                              value={stockEdits[p.id]||''}
+                              onChange={e=>setStockEdits(prev=>({...prev,[p.id]:e.target.value}))}
+                              style={{width:80}}
+                            />
+                          </td>
+                          <td>
+                            <button className="btn btn-success btn-sm" onClick={()=>applyStockChange(p)} disabled={!stockEdits[p.id]}>✓</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card Layout */}
+              <div className="table-cards-mobile">
+                {filteredStock.map(p => (
+                  <div key={p.id} className="table-card">
+                    <div className="table-card-title">{p.name}</div>
+
+                    <div className="table-card-row">
+                      <span>Category</span>
+                      <strong>{p.category}</strong>
+                    </div>
+
+                    <div className="table-card-row">
+                      <span>Stock</span>
+                      <strong>{p.stock} {p.unit}</strong>
+                    </div>
+
+                    <div className="table-card-row">
+                      <span>Status</span>
+                      <span className={`badge ${p.stock===0?'badge-danger':p.stock<=10?'badge-warning':'badge-success'}`}>
+                        {p.stock===0?'Out':p.stock<=10?'Low':'In Stock'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Audit Log */}
+            <div>
+              <div style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:16,padding:20}}>
+                <div style={{fontWeight:800,fontSize:15,marginBottom:16,display:'flex',alignItems:'center',gap:8}}>
+                  📋 Stock Audit Log
+                  <span style={{background:'rgba(108,99,255,0.15)',color:'var(--accent)',borderRadius:20,fontSize:11,fontWeight:700,padding:'2px 8px',marginLeft:'auto'}}>{stockAuditLog.length} entries</span>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  {stockAuditLog.map(log=>(
+                    <div key={log.id} style={{padding:'12px',background:'var(--bg-input)',borderRadius:10,border:'1px solid var(--border)'}}>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+                        <span style={{fontWeight:700,fontSize:13}}>{log.product}</span>
+                        <span style={{
+                          fontWeight:800,fontSize:14,
+                          color: log.change.startsWith('+')?'var(--success)':'var(--danger)'
+                        }}>{log.change}</span>
+                      </div>
+                      <div style={{fontSize:12,color:'var(--text-muted)'}}>{log.reason}</div>
+                      <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4}}>{fmt(log.time)} · by {log.by}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:16,padding:20,marginTop:16}}>
+                <div style={{fontWeight:800,fontSize:15,marginBottom:14}}>📊 Inventory Overview</div>
+                {[
+                  {label:'Total Products', value: products.length},
+                  {label:'In Stock', value: products.filter(p=>p.stock>10).length, color:'var(--success)'},
+                  {label:'Low Stock (≤10)', value: products.filter(p=>p.stock>0&&p.stock<=10).length, color:'var(--warning)'},
+                  {label:'Out of Stock', value: products.filter(p=>p.stock===0).length, color:'var(--danger)'},
+                  {label:'Total Inventory Value', value:'₹'+products.reduce((s,p)=>s+p.price*p.stock,0).toLocaleString(), color:'var(--accent)'},
+                ].map(s=>(
+                  <div key={s.label} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:14}}>
+                    <span style={{color:'var(--text-secondary)'}}>{s.label}</span>
+                    <span style={{fontWeight:700,color:s.color||'var(--text-primary)'}}>{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== BILL RECEIPT MODAL ===== */}
+      {showBillReceipt && lastBill && (
+        <div className="modal-overlay" onClick={e=>e.target.className.includes('modal-overlay')&&setShowBillReceipt(false)}>
+          <div className="modal modal-lg">
+            <div className="modal-header">
+              <div className="modal-title">🧾 Bill Receipt</div>
+              <button className="modal-close" onClick={()=>{setShowBillReceipt(false);clearBill();}}>✕</button>
+            </div>
+
+            {/* Receipt header */}
+            <div style={{textAlign:'center',padding:'4px 0 20px',borderBottom:'1px dashed var(--border)',marginBottom:16}}>
+              <div style={{fontSize:20,fontWeight:900}}>{shop?.name}</div>
+              {shop?.phone && <div style={{fontSize:13,color:'var(--text-secondary)'}}>📞 {shop.phone}</div>}
+              <div style={{fontSize:12,color:'var(--text-muted)',marginTop:4}}>{fmt(lastBill.time)}</div>
+              <div style={{fontFamily:'monospace',fontSize:13,color:'var(--accent)',marginTop:4}}>{lastBill.id}</div>
+            </div>
+
+            {/* Customer */}
+            {lastBill.customerName!=='Walk-in Customer' && (
+              <div style={{background:'var(--bg-input)',borderRadius:10,padding:'10px 14px',marginBottom:16,fontSize:13,display:'flex',justifyContent:'space-between'}}>
+                <span style={{color:'var(--text-secondary)'}}>Customer</span>
+                <span style={{fontWeight:700}}>{lastBill.customerName} {lastBill.customerPhone?`· ${lastBill.customerPhone}`:''}</span>
+              </div>
+            )}
+
+            {/* Items */}
+            <div style={{marginBottom:16}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr auto auto auto',gap:8,padding:'6px 0',borderBottom:'2px solid var(--border)',marginBottom:6,fontSize:12,fontWeight:700,textTransform:'uppercase',color:'var(--text-muted)'}}>
+                <span>Item</span><span>Qty</span><span>Rate</span><span>Amt</span>
+              </div>
+              {lastBill.items.map((it,i)=>(
+                <div key={i} style={{display:'grid',gridTemplateColumns:'1fr auto auto auto',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:14,alignItems:'center'}}>
+                  <span style={{fontWeight:600}}>{it.name}</span>
+                  <span style={{color:'var(--text-secondary)',textAlign:'right'}}>{it.qty} {it.unit}</span>
+                  <span style={{color:'var(--text-secondary)',textAlign:'right'}}>₹{it.price}</span>
+                  <span style={{fontWeight:700,textAlign:'right'}}>₹{it.price*it.qty}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Totals */}
+            <div style={{background:'var(--bg-input)',borderRadius:12,padding:'14px 16px',marginBottom:16}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:14,marginBottom:8}}>
+                <span style={{color:'var(--text-secondary)'}}>Subtotal</span><span>₹{lastBill.subtotal}</span>
+              </div>
+              {lastBill.discountAmt>0 && (
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:14,marginBottom:8}}>
+                  <span style={{color:'var(--success)'}}>Discount ({lastBill.discount}{lastBill.discountType})</span>
+                  <span style={{color:'var(--success)'}}>−₹{lastBill.discountAmt}</span>
+                </div>
+              )}
+              <div style={{display:'flex',justifyContent:'space-between',fontWeight:900,fontSize:20,paddingTop:10,borderTop:'1px solid var(--border)'}}>
+                <span>Total</span><span style={{color:'var(--accent)'}}>₹{lastBill.total}</span>
+              </div>
+            </div>
+
+            {/* Payment + Note */}
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:16,padding:'8px 0',borderBottom:'1px dashed var(--border)'}}>
+              <span style={{color:'var(--text-secondary)'}}>Payment Mode</span>
+              <span style={{fontWeight:700}}>{lastBill.paymentMode==='Cash'?'💵':lastBill.paymentMode==='UPI'?'📱':lastBill.paymentMode==='Card'?'💳':'📒'} {lastBill.paymentMode}</span>
+            </div>
+            {lastBill.note && (
+              <div style={{fontSize:13,color:'var(--text-muted)',marginBottom:16,fontStyle:'italic'}}>📝 {lastBill.note}</div>
+            )}
+
+            {/* Footer */}
+            <div style={{textAlign:'center',fontSize:12,color:'var(--text-muted)',marginBottom:20}}>
+              Thank you for shopping at {shop?.name}! 🙏
+            </div>
+
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <button className="btn btn-outline" style={{justifyContent:'center'}} onClick={()=>window.print()}>🖨️ Print</button>
+              <button className="btn btn-primary" style={{justifyContent:'center'}} onClick={()=>{setShowBillReceipt(false);clearBill();}}>✓ Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// QR CODE PAGE
+// ============================================================
+function QRCodePage() {
+  const { shop } = useContext(AppCtx);
+  const qrValue = `stockify://shop/${shop?.ownerId}?name=${encodeURIComponent(shop?.name||'')}`;
+
+  return (
+    <div className="page fade-in">
+      <div style={{fontSize:20,fontWeight:800,marginBottom:24}}>📷 Shop QR Code</div>
+      <div className="card" style={{maxWidth:480,margin:'0 auto',textAlign:'center'}}>
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:18,fontWeight:700}}>{shop?.name}</div>
+          <div style={{fontSize:13,color:'var(--text-secondary)',marginTop:4}}>Share this QR code with your customers</div>
+        </div>
+        <div className="qr-container">
+          <div className="qr-frame">
+            <QRCode value={qrValue} size={220} />
+          </div>
+        </div>
+        <div style={{marginTop:20,padding:'14px 20px',background:'var(--bg-input)',borderRadius:10,fontSize:12,color:'var(--text-secondary)',wordBreak:'break-all',fontFamily:'monospace'}}>
+          {qrValue}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,160px),1fr))',gap:'0.75rem',marginTop:'1.25rem'}}>
+          <div style={{padding:'14px',background:'rgba(108,99,255,0.1)',borderRadius:12,border:'1px solid rgba(108,99,255,0.2)'}}>
+            <div style={{fontSize:22}}>📱</div>
+            <div style={{fontSize:13,fontWeight:600,marginTop:8}}>Mobile Scan</div>
+            <div style={{fontSize:12,color:'var(--text-secondary)'}}>Works on all phones</div>
+          </div>
+          <div style={{padding:'14px',background:'rgba(67,217,173,0.1)',borderRadius:12,border:'1px solid rgba(67,217,173,0.2)'}}>
+            <div style={{fontSize:22}}>💻</div>
+            <div style={{fontSize:13,fontWeight:600,marginTop:8}}>Web Scan</div>
+            <div style={{fontSize:12,color:'var(--text-secondary)'}}>Laptop camera ready</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// OWNER DASHBOARD SHELL
+// ============================================================
+function OwnerDashboard() {
+  const { ownerPage, setSidebarOpen } = useContext(AppCtx);
+
+  const titles = { dashboard:'Dashboard', products:'Products', orders:'Customer Orders', lowstock:'Low Stock', billing:'Billing & Stock Management', qrcode:'QR Code' };
+
+  return (
+    <div className="app-shell">
+      <Sidebar />
+      <div className="main-content">
+        <div className="topbar">
+          <div className="topbar-left">
+            <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">☰</button>
+            <div className="topbar-title">{titles[ownerPage]||'Dashboard'}</div>
+          </div>
+          <div className="topbar-right">
+            <span style={{fontSize:13,color:'var(--text-secondary)',display:'flex',alignItems:'center',gap:6}}>
+              <span style={{width:8,height:8,background:'var(--success)',borderRadius:'50%',display:'inline-block'}}></span>
+              Live
+            </span>
+          </div>
+        </div>
+        {ownerPage === 'dashboard' && <DashboardPage />}
+        {ownerPage === 'products' && <ProductsPage />}
+        {ownerPage === 'orders' && <OrdersPage />}
+        {ownerPage === 'lowstock' && <LowStockPage />}
+        {ownerPage === 'billing' && <BillingPage />}
+        {ownerPage === 'qrcode' && <QRCodePage />}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// CUSTOMER QR SCANNER
+// ============================================================
+function CustomerScan() {
+  const { setView, shop, notify } = useContext(AppCtx);
+  const [scanning, setScanning] = useState(false);
+
+  const simulateScan = () => {
+    setScanning(true);
+    setTimeout(() => {
+      setScanning(false);
+      notify('Shop Found! 🏪', `Connected to ${shop.name}`, '✅');
+      setView('customerShop');
+    }, 2200);
+  };
+
+  return (
+    <div className="scanner-page fade-in">
+      <div style={{textAlign:'center',marginBottom:8}}>
+        <div style={{fontSize:32,fontWeight:900,letterSpacing:-1}}>Stock<span style={{color:'var(--accent)'}}>ify</span></div>
+        <div style={{color:'var(--text-secondary)',marginTop:6}}>Scan a shop's QR to start shopping</div>
+      </div>
+
+      <div className="scanner-frame">
+        <div className="scanner-corner tl"></div>
+        <div className="scanner-corner tr"></div>
+        <div className="scanner-corner bl"></div>
+        <div className="scanner-corner br"></div>
+        {scanning && <div className="scanner-line"></div>}
+        <div className="scanner-inner">
+          {scanning ? (
+            <>
+              <div className="spinner"></div>
+              <span style={{fontSize:12}}>Scanning...</span>
+            </>
+          ) : (
+            <>
+              <span style={{fontSize:48,opacity:0.3}}>📷</span>
+              <span>Camera preview</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <button className="btn btn-primary btn-lg" onClick={simulateScan} disabled={scanning}>
+        {scanning ? '🔍 Scanning...' : '📷 Scan QR Code'}
+      </button>
+
+      <div style={{marginTop:20,textAlign:'center'}}>
+        <div style={{fontSize:13,color:'var(--text-muted)',marginBottom:10}}>— or enter shop code manually —</div>
+        <button className="btn btn-outline" onClick={() => setView('customerShop')}>
+          🏪 Browse Demo Shop
+        </button>
+      </div>
+
+      <button className="btn btn-ghost" style={{marginTop:16,color:'var(--text-muted)'}} onClick={() => setView('landing')}>
+        ← Back
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// CUSTOMER SHOP PAGE
+// ============================================================
+function CustomerShop() {
+  const { products, shop, addToCart, cart, cartOpen, setCartOpen, cartCount, cartTotal, updateCartQty, removeFromCart, placeOrder, setView } = useContext(AppCtx);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All');
+
+  const categories = ['All', ...new Set(products.map(p => p.category))];
+  const filtered = products.filter(p => {
+    const matchCat = category === 'All' || p.category === category;
+    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  const getCartQty = (id) => cart.find(c => c.id === id)?.qty || 0;
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg-primary)',paddingBottom:100}}>
+      {/* Header */}
+      <div className="shop-header">
+        <div className="shop-header-inner">
+          <div style={{minWidth:0}}>
+            <div style={{fontSize:'1.0625rem',fontWeight:800,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{shop.name}</div>
+            <div style={{fontSize:'.75rem',color:'var(--text-secondary)'}}>📍 Kirana Shop</div>
+          </div>
+          <div className="shop-header-right">
+            <div className="search-bar" style={{maxWidth:220}}>
+              <span className="search-icon">🔍</span>
+              <input className="search-input" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)} />
+            </div>
+            <div style={{position:'relative'}}>
+              <button className="cart-fab-btn" onClick={() => setCartOpen(true)} aria-label="Open cart">
+                🛒
+                {cartCount > 0 && <span className="cart-count-badge">{cartCount}</span>}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:1200,margin:'0 auto',padding:'1.25rem 1rem'}}>
+        {/* Category filter */}
+        <div className="cat-filters">
+          {categories.map(c => (
+            <button key={c} className={`cat-btn ${category===c?'active':''}`} onClick={() => setCategory(c)}>{c}</button>
+          ))}
+        </div>
+
+        {/* Products */}
+        <div className="products-grid">
+          {filtered.map(p => {
+            const qty = getCartQty(p.id);
+            const stockPct = Math.min(100, (p.stock/60)*100);
+            return (
+              <div key={p.id} className="product-card fade-in">
+                <div className="product-header">
+                  <div>
+                    <div className="product-name">{p.name}</div>
+                    <div className="product-category">{p.category}</div>
+                  </div>
+                  <span className={`badge ${p.stock===0?'badge-danger':p.stock<=10?'badge-warning':'badge-success'}`} style={{flexShrink:0}}>
+                    {p.stock===0?'Out':p.stock<=10?'Low':'In Stock'}
+                  </span>
+                </div>
+
+                <div>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'var(--text-muted)',marginBottom:5}}>
+                    <span>Stock</span><span>{p.stock} {p.unit}</span>
+                  </div>
+                  <div className="product-stock-bar">
+                    <div className="product-stock-fill" style={{width:`${stockPct}%`, background: p.stock===0?'var(--danger)':p.stock<=10?'var(--warning)':'var(--success)'}}></div>
+                  </div>
+                </div>
+
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <div className="product-price">₹{p.price}<small>/{p.unit}</small></div>
+                  {p.stock === 0 ? (
+                    <span style={{fontSize:13,color:'var(--text-muted)'}}>Unavailable</span>
+                  ) : qty === 0 ? (
+                    <button className="btn btn-primary btn-sm" onClick={() => addToCart(p)}>+ Add</button>
+                  ) : (
+                    <div className="qty-control">
+                      <button className="qty-btn" onClick={() => updateCartQty(p.id, qty-1)}>−</button>
+                      <span className="qty-value">{qty}</span>
+                      <button className="qty-btn" onClick={() => updateCartQty(p.id, qty+1)}>+</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Cart Panel */}
+      <div className={`cart-panel ${cartOpen?'open':''}`}>
+        <div className="cart-header">
+          <div className="cart-title">🛒 Your Cart</div>
+          <button className="modal-close" onClick={() => setCartOpen(false)}>✕</button>
+        </div>
+        <div className="cart-body">
+          {cart.length === 0 ? (
+            <div className="empty-state"><div className="empty-state-icon">🛒</div><div className="empty-state-title">Cart is empty</div><div className="empty-state-sub">Add products to get started</div></div>
+          ) : cart.map(item => (
+            <div key={item.id} className="cart-item">
+              <div className="cart-item-name">{item.name}</div>
+              <div className="cart-item-row">
+                <div className="qty-control">
+                  <button className="qty-btn" onClick={() => updateCartQty(item.id, item.qty-1)}>−</button>
+                  <span className="qty-value">{item.qty}</span>
+                  <button className="qty-btn" onClick={() => updateCartQty(item.id, item.qty+1)}>+</button>
+                </div>
+                <div className="cart-item-price">₹{item.price*item.qty}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {cart.length > 0 && (
+          <div className="cart-footer">
+            <div className="cart-total-row">
+              <div className="cart-total-label">Total Amount</div>
+              <div className="cart-total-value">₹{cartTotal}</div>
+            </div>
+            <div style={{background:'rgba(67,217,173,0.1)',border:'1px solid rgba(67,217,173,0.2)',borderRadius:10,padding:'10px 14px',marginBottom:16,fontSize:13,color:'var(--success)'}}>
+              30% advance: ₹{Math.round(cartTotal*0.3)}
+            </div>
+            <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={placeOrder}>
+              Place Order 🎉
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Cart backdrop */}
+      {cartOpen && <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:199}} onClick={() => setCartOpen(false)}></div>}
+    </div>
+  );
+}
+
+// ============================================================
+// ORDER SUCCESS PAGE
+// ============================================================
+function OrderSuccessPage() {
+  const { lastOrder, setView, shop } = useContext(AppCtx);
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card" style={{maxWidth:480,textAlign:'center'}}>
+        <div className="order-success">
+          <div className="order-success-icon">🎉</div>
+          <div className="order-success-title">Order Placed!</div>
+          <div className="order-success-sub">
+            Your order #{lastOrder?.id} has been placed at <strong>{shop?.name}</strong>. The owner has been notified and will prepare it shortly.
+          </div>
+          {lastOrder && (
+            <div style={{background:'var(--bg-input)',borderRadius:14,padding:20,marginBottom:24,textAlign:'left'}}>
+              {lastOrder.items.map((it,i) => (
+                <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid var(--border)',fontSize:14}}>
+                  <span>{it.name} ×{it.qty}</span><span>₹{it.price*it.qty}</span>
+                </div>
+              ))}
+              <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0 4px',fontWeight:800}}>
+                <span>Total</span><span style={{color:'var(--accent)'}}>₹{lastOrder.total}</span>
+              </div>
+              <div style={{fontSize:13,color:'var(--success)',textAlign:'center',marginTop:8}}>
+                30% advance: ₹{Math.round(lastOrder.total*0.3)} — pay at pickup
+              </div>
+            </div>
+          )}
+          <div style={{background:'rgba(108,99,255,0.1)',border:'1px solid rgba(108,99,255,0.3)',borderRadius:12,padding:'14px',marginBottom:24,fontSize:14,color:'var(--accent)'}}>
+            📲 You'll be notified when your order is ready for pickup!
+          </div>
+          <button className="btn btn-primary btn-lg" style={{width:'100%',justifyContent:'center'}} onClick={() => setView('customerShop')}>
+            Continue Shopping
+          </button>
+          <button className="btn btn-ghost" style={{width:'100%',justifyContent:'center',marginTop:10}} onClick={() => setView('landing')}>
+            Back to Home
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// FIREBASE SETUP NOTICE
+// ============================================================
+function FirebaseNotice({ onDismiss }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal modal-lg">
+        <div className="modal-header">
+          <div className="modal-title">🔥 Firebase Setup Required</div>
+          <button className="modal-close" onClick={onDismiss}>✕</button>
+        </div>
+        <p style={{color:'var(--text-secondary)',fontSize:14,lineHeight:1.7,marginBottom:20}}>
+          Stockify is built to use <strong style={{color:'var(--text-primary)'}}>Firebase</strong> for real-time sync, authentication, and data storage. To enable the full backend, replace the config at the top of the file with your Firebase project credentials.
+        </p>
+        <div style={{background:'var(--bg-input)',borderRadius:12,padding:20,fontFamily:'monospace',fontSize:13,color:'var(--accent3)',marginBottom:20,lineHeight:1.8}}>
+          {`const FIREBASE_CONFIG = {`}<br/>
+          {`  apiKey: "YOUR_API_KEY",`}<br/>
+          {`  authDomain: "YOUR_PROJECT.firebaseapp.com",`}<br/>
+          {`  projectId: "YOUR_PROJECT_ID",`}<br/>
+          {`  ...`}<br/>
+          {`};`}
+        </div>
+        <div style={{marginBottom:20}}>
+          <div style={{fontWeight:700,marginBottom:12}}>Steps to set up Firebase:</div>
+          {[
+            'Go to console.firebase.google.com and create a project',
+            'Enable Authentication → Email/Password + Google',
+            'Create a Firestore database in production mode',
+            'Go to Project Settings → Web App → copy the config',
+            'Replace FIREBASE_CONFIG in this file with your config',
+          ].map((s,i) => (
+            <div key={i} style={{display:'flex',gap:12,padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:14}}>
+              <span style={{color:'var(--accent)',fontWeight:700,minWidth:20}}>{i+1}.</span>
+              <span>{s}</span>
+            </div>
+          ))}
+        </div>
+        <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={onDismiss}>
+          Continue with Demo Mode →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// APP ROOT
+// ============================================================
+function App() {
+  const { view, userRole } = useContext(AppCtx);
+  const [showFirebaseNotice, setShowFirebaseNotice] = useState(true);
+
+  return (
+    <>
+      <NotifToasts />
+      {showFirebaseNotice && <FirebaseNotice onDismiss={() => setShowFirebaseNotice(false)} />}
+      {view === 'landing' && <LandingPage />}
+      {view === 'ownerAuth' && <AuthPage role="owner" />}
+      {view === 'customerAuth' && <AuthPage role="customer" />}
+      {view === 'ownerSetup' && <OwnerSetupPage />}
+      {view === 'ownerDash' && <OwnerDashboard />}
+      {view === 'customerScan' && <CustomerScan />}
+      {view === 'customerShop' && <CustomerShop />}
+      {view === 'orderSuccess' && <OrderSuccessPage />}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <AppProvider><App /></AppProvider>
+);
+</script>
+</body>
+</html>
