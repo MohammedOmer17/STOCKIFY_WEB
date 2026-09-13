@@ -2489,61 +2489,14 @@ function OrderSuccessPage() {
 }
 
 // ============================================================
-// FIREBASE SETUP NOTICE
-// ============================================================
-function FirebaseNotice({ onDismiss }) {
-  return (
-    <div className="modal-overlay">
-      <div className="modal modal-lg">
-        <div className="modal-header">
-          <div className="modal-title">🔥 Firebase Setup Required</div>
-          <button className="modal-close" onClick={onDismiss}>✕</button>
-        </div>
-        <p style={{color:'var(--text-secondary)',fontSize:14,lineHeight:1.7,marginBottom:20}}>
-          Stockify is built to use <strong style={{color:'var(--text-primary)'}}>Firebase</strong> for real-time sync, authentication, and data storage. To enable the full backend, replace the config at the top of the file with your Firebase project credentials.
-        </p>
-        <div style={{background:'var(--bg-input)',borderRadius:12,padding:20,fontFamily:'monospace',fontSize:13,color:'var(--accent3)',marginBottom:20,lineHeight:1.8}}>
-          {`const FIREBASE_CONFIG = {`}<br/>
-          {`  apiKey: "YOUR_API_KEY",`}<br/>
-          {`  authDomain: "YOUR_PROJECT.firebaseapp.com",`}<br/>
-          {`  projectId: "YOUR_PROJECT_ID",`}<br/>
-          {`  ...`}<br/>
-          {`};`}
-        </div>
-        <div style={{marginBottom:20}}>
-          <div style={{fontWeight:700,marginBottom:12}}>Steps to set up Firebase:</div>
-          {[
-            'Go to console.firebase.google.com and create a project',
-            'Enable Authentication → Email/Password + Google',
-            'Create a Firestore database in production mode',
-            'Go to Project Settings → Web App → copy the config',
-            'Replace FIREBASE_CONFIG in this file with your config',
-          ].map((s,i) => (
-            <div key={i} style={{display:'flex',gap:12,padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:14}}>
-              <span style={{color:'var(--accent)',fontWeight:700,minWidth:20}}>{i+1}.</span>
-              <span>{s}</span>
-            </div>
-          ))}
-        </div>
-        <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={onDismiss}>
-          Continue with Demo Mode →
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
 // APP ROOT
 // ============================================================
 function App() {
   const { view, userRole } = useContext(AppCtx);
-  const [showFirebaseNotice, setShowFirebaseNotice] = useState(true);
 
   return (
     <>
       <NotifToasts />
-      {showFirebaseNotice && <FirebaseNotice onDismiss={() => setShowFirebaseNotice(false)} />}
       {view === 'landing' && <LandingPage />}
       {view === 'ownerAuth' && <AuthPage role="owner" />}
       {view === 'customerAuth' && <AuthPage role="customer" />}
